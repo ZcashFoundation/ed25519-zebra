@@ -18,8 +18,14 @@ pub static SMALL_ORDER_SIGS: Lazy<Vec<TestCase>> = Lazy::new(|| {
     let encodings = EIGHT_TORSION
         .iter()
         .map(|point| point.compress().to_bytes())
-        .chain(util::non_canonical_point_encodings().into_iter().take(5))
+        .chain(util::non_canonical_point_encodings().into_iter().take(6))
         .collect::<Vec<_>>();
+
+    /*
+    for (i, e) in encodings.iter().enumerate() {
+        println!("{}: {}", i, hex::encode(e));
+    }
+    */
 
     for A_bytes in &encodings {
         let A = CompressedEdwardsY(*A_bytes).decompress().unwrap();

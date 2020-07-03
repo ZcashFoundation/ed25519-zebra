@@ -80,20 +80,52 @@ pub fn non_canonical_field_encodings() -> Vec<[u8; 32]> {
 
 // Compute all 25 non-canonical point encodings.  The first 5 are low order.
 pub fn non_canonical_point_encodings() -> Vec<[u8; 32]> {
-    // Points are encoded by the x-coordinate and a sign bit.
-    // There are two ways to construct a non-canonical point encoding:
+    // Points are encoded by the y-coordinate and a bit indicating the
+    // sign of the x-coordinate. There are two ways to construct a
+    // non-canonical point encoding:
     //
-    // (1) by using a non-canonical encoding of x (cf RFC8032§5.1.3.1)
-    // (2) by selecting x so that both sign choices give the same point (cf RFC8032§5.1.3.4)
+    // (1) by using a non-canonical encoding of y (cf RFC8032§5.1.3.1)
+    // (2) by selecting y so that both sign choices give the same x.
     //
-    // Condition (2) is possible only when x = 0 (or is a non-canonical encoding of 0).
-
+    // Condition (1) can occur only for 19 field elements that can be encoded
+    // non-canonically as y + p with y + p fitting in 255 bits.
+    //
+    // Condition (2) occurs if and only if x = -x, i.e., x = 0.
+    // The curve equation is ax^2 + y^2 = 1 + dx^2 + y^2 so x = 0 => y^2 = 1.
+    // This means y = 1 or y = -1.
+    //
+    // When y = -1, y can only be canonically encoded, so the encodings of (0,-1) are:
+    // * enc(-1) || 0 [canonical]
+    // * enc(-1) || 1 [non-canonical]
+    //
+    // When y = 1, y can be non-canonically encoded, so the encodings of (0,1) are:
+    // * enc(1) || 0 [canonical]
+    // * enc(1) || 1 [non-canonical]
+    // * enc(2^255 - 18) || 0 [non-canonical]
+    // * enc(2^255 - 18) || 1 [non-canonical]
+    //
+    // We pick up the latter two in generation of non-canonically encoded field elements,
+    // and construct the first two explicitly.
+    //
+    // RFC8032§5.1.3.4 requires implementations to perform a field element equality check
+    // on the x value computed inside the decompression routine and abort if x = 0 and
+    // the sign bit was set.  However, no implementations do this, and any implementation
+    // that did would then be subtly incompatible with others in a new and different way.
+    //
+    // (This taxonomy was created with pointers from Sean Bowe and NCC Group).
     let mut encodings = Vec::new();
 
-    // The only non-canonical point encoding with canonical field encoding
-    let mut zero_with_sign = [0; 32];
-    zero_with_sign[31] |= 128;
-    encodings.push(zero_with_sign);
+    // Canonical y with non-canonical sign bits.
+    let y1_noncanonical_sign_bit = [
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 128,
+    ];
+    encodings.push(y1_noncanonical_sign_bit);
+    let ym1_noncanonical_sign_bit = [
+        236, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    ];
+    encodings.push(ym1_noncanonical_sign_bit);
 
     // Run through non-canonical field elements.
     // Not all field elements are x-coordinates of curve points, so check:
@@ -107,10 +139,22 @@ pub fn non_canonical_point_encodings() -> Vec<[u8; 32]> {
         }
     }
 
+    // Check that all of the non-canonical points are really non-canonical
+    for &e in &encodings {
+        assert_ne!(
+            e,
+            CompressedEdwardsY(e)
+                .decompress()
+                .unwrap()
+                .compress()
+                .to_bytes()
+        );
+    }
+
     encodings
 }
 
-// Running this reveals that only the first 5 entries on the list have low order.
+// Running this reveals that only the first 6 entries on the list have low order.
 #[test]
 fn print_non_canonical_points() {
     for encoding in non_canonical_point_encodings().into_iter() {
