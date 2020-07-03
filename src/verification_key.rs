@@ -88,7 +88,7 @@ impl From<VerificationKeyBytes> for [u8; 32] {
 /// * `A_bytes` MUST be an encoding of a point `A` on the twisted Edwards form of
 ///   Curve25519, and non-canonical encodings MUST be accepted;
 ///
-/// [ps]: https://zips.z.cash/protocol/protocol.pdf#concretejssig
+/// [ps]: https://zips.z.cash/protocol/protocol.pdf#concreteed25519
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes"))]
@@ -168,8 +168,8 @@ impl VerificationKey {
     /// * the alternate verification equation `[s]B = R + [k]A`, allowed by RFC 8032, MUST NOT be
     ///   used.
     ///
-    /// [ps]: https://zips.z.cash/protocol/protocol.pdf#concretejssig [ZIP 215]:
-    /// https://github.com/zcash/zips/blob/master/zip-0215.rst
+    /// [ps]: https://zips.z.cash/protocol/protocol.pdf#concreteed25519
+    /// [ZIP 215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
     #[allow(non_snake_case)]
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         // `s_bytes` MUST represent an integer less than the prime `l`.
