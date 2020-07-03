@@ -79,8 +79,8 @@ pub static SMALL_ORDER_SIGS: Lazy<Vec<TestCase>> = Lazy::new(|| {
 #[test]
 fn conformance() -> Result<(), Report> {
     for case in SMALL_ORDER_SIGS.iter() {
-        println!("{:#?}", case);
         case.check()?;
     }
+    println!("{:#?}", *SMALL_ORDER_SIGS);
     Ok(())
 }
