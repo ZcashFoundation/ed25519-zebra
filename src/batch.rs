@@ -48,7 +48,7 @@
 //!
 //! [ZIP215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
 
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryFrom};
 
 use curve25519_dalek::{
     edwards::{CompressedEdwardsY, EdwardsPoint},
@@ -58,7 +58,7 @@ use curve25519_dalek::{
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
 
-use crate::{Error, Signature, VerificationKeyBytes};
+use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
 
 // Shim to generate a u128 without importing `rand`.
 fn gen_u128<R: RngCore + CryptoRng>(mut rng: R) -> u128 {
@@ -101,31 +101,9 @@ impl Item {
     /// [`VerificationKey::verify`](crate::VerificationKey::verify), which requires
     /// borrowing the message data, the `Item` type is unlinked from the lifetime of
     /// the message.
-    #[allow(non_snake_case)]
     pub fn verify_single(self) -> Result<(), Error> {
-        // * `A_bytes` and `R_bytes` MUST be encodings of points `A` and `R` respectively on the
-        //   twisted Edwards form of Curve25519, and non-canonical encodings MUST be accepted;
-        let A = CompressedEdwardsY(self.vk_bytes.0)
-            .decompress()
-            .ok_or(Error::MalformedPublicKey)?;
-        let minus_A = -A;
-        let R = CompressedEdwardsY(self.sig.R_bytes)
-            .decompress()
-            .ok_or(Error::InvalidSignature)?;
-        // `s_bytes` MUST represent an integer less than the prime `l`.
-        let s = Scalar::from_canonical_bytes(self.sig.s_bytes).ok_or(Error::InvalidSignature)?;
-
-        //       [8][s]B = [8]R + [8][k]A
-        // <=>   [8]R = [8][s]B - [8][k]A
-        // <=>   0 = [8](R - ([s]B - [k]A))
-        // <=>   0 = [8](R - R')  where R' = [s]B - [k]A
-        let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&self.k, &minus_A, &s);
-
-        if (R - R_prime).mul_by_cofactor().is_identity() {
-            Ok(())
-        } else {
-            Err(Error::InvalidSignature)
-        }
+        VerificationKey::try_from(self.vk_bytes)
+            .and_then(|vk| vk.verify_prehashed(&self.sig, self.k))
     }
 }
 
