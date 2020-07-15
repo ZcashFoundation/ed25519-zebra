@@ -72,6 +72,7 @@ fn gen_u128<R: RngCore + CryptoRng>(mut rng: R) -> u128 {
 /// This struct exists to allow batch processing to be decoupled from the
 /// lifetime of the message. This is useful when using the batch verification API
 /// in an async context.
+#[derive(Clone, Debug)]
 pub struct Item {
     vk_bytes: VerificationKeyBytes,
     sig: Signature,
@@ -89,6 +90,42 @@ impl<'msg, M: AsRef<[u8]> + ?Sized> From<(VerificationKeyBytes, Signature, &'msg
                 .chain(msg),
         );
         Self { vk_bytes, sig, k }
+    }
+}
+
+impl Item {
+    /// Perform non-batched verification of this `Item`.
+    ///
+    /// This is useful (in combination with `Item::clone`) for implementing fallback
+    /// logic when batch verification fails. In contrast to
+    /// [`VerificationKey::verify`](crate::VerificationKey::verify), which requires
+    /// borrowing the message data, the `Item` type is unlinked from the lifetime of
+    /// the message.
+    #[allow(non_snake_case)]
+    pub fn verify_single(self) -> Result<(), Error> {
+        // * `A_bytes` and `R_bytes` MUST be encodings of points `A` and `R` respectively on the
+        //   twisted Edwards form of Curve25519, and non-canonical encodings MUST be accepted;
+        let A = CompressedEdwardsY(self.vk_bytes.0)
+            .decompress()
+            .ok_or(Error::MalformedPublicKey)?;
+        let minus_A = -A;
+        let R = CompressedEdwardsY(self.sig.R_bytes)
+            .decompress()
+            .ok_or(Error::InvalidSignature)?;
+        // `s_bytes` MUST represent an integer less than the prime `l`.
+        let s = Scalar::from_canonical_bytes(self.sig.s_bytes).ok_or(Error::InvalidSignature)?;
+
+        //       [8][s]B = [8]R + [8][k]A
+        // <=>   [8]R = [8][s]B - [8][k]A
+        // <=>   0 = [8](R - ([s]B - [k]A))
+        // <=>   0 = [8](R - R')  where R' = [s]B - [k]A
+        let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&self.k, &minus_A, &s);
+
+        if (R - R_prime).mul_by_cofactor().is_identity() {
+            Ok(())
+        } else {
+            Err(Error::InvalidSignature)
+        }
     }
 }
 
