@@ -2,6 +2,11 @@
 
 Entries are listed in reverse chronological order.
 
+# 1.0.1
+
+* Update `sha2` to `0.9` and `curve25519-dalek` to `3.0`.
+* Fix missing cofactor multiplication in batch verification (backport from 2.x).
+
 # 1.0.0
 
 * Adds `impl TryFrom<&[u8]>` for all types.
