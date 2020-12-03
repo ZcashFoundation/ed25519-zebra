@@ -106,7 +106,6 @@ impl From<[u8; 32]> for SigningKey {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl zeroize::Zeroize for SigningKey {
     fn zeroize(&mut self) {
         self.seed.zeroize();
