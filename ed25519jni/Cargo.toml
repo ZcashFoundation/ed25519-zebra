@@ -1,0 +1,17 @@
+[package]
+name = "ed25519jni"
+version = "0.0.1"
+authors = ["Douglas Roark <douglas.roark@gemini.com>"]
+license = "MIT OR Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+ed25519-zebra = { path = "../" }
+failure = "0.1.8"
+jni = "0.18.0"
+
+[lib]
+name = "ed25519jni"
+path = "src/main/rust/lib.rs"
+crate-type = ["staticlib", "cdylib"]
