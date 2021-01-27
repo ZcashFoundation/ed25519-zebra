@@ -1,6 +1,6 @@
 use ed25519_zebra::{Signature, SigningKey, VerificationKey, VerificationKeyBytes,};
 use jni::{objects::JClass, sys::{jboolean, jbyteArray}, JNIEnv,};
-use std::{convert::TryFrom, mem, panic, ptr,};
+use std::{convert::TryFrom, panic, ptr,};
 
 mod utils;
 
@@ -14,15 +14,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_checkVerificationK
 ) -> jboolean {
     let mut vkb = [0u8; 32];
     vkb.copy_from_slice(&env.convert_byte_array(vk_bytes).unwrap());
-    let vkb_result = VerificationKeyBytes::try_from(VerificationKeyBytes::from(vkb));
 
-    let resu8: u8 = unsafe {  // There has to be a better way to cast to jboolean/u8....
-        mem::transmute(match vkb_result {
-            Ok(_) => true,
-            Err(_) => false,
-        })
-    };
-    resu8
+    let vkb_result = VerificationKeyBytes::try_from(VerificationKeyBytes::from(vkb));
+    vkb_result.is_ok() as _
 }
 
 #[no_mangle]
@@ -96,6 +90,5 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_verify(
     let vkb = VerificationKeyBytes::try_from(VerificationKeyBytes::from(vk_data)).unwrap();
     let vk = VerificationKey::try_from(vkb).unwrap();
     let resbool = vk.verify(&signature, &msg).is_ok();
-    let resu8: u8 = unsafe { mem::transmute(resbool) }; // There has to be a better way to cast to jboolean/u8....
-    resu8
+    resbool as _
 }

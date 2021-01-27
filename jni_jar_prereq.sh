@@ -30,9 +30,9 @@ else
   mode=release
 fi
 
-if [[ -d ed25519jni/target/rust/${mode} ]] ; then
-  cp -f ed25519jni/target/rust/${mode}/libed25519jni.a ${nativeDir}
-  cp -f ed25519jni/target/rust/${mode}/libed25519jni.${nativeSuffix} ${nativeDir}
+if [[ -d target/${mode} ]] ; then
+  cp -f target/${mode}/libed25519jni.a ${nativeDir}
+  cp -f target/${mode}/libed25519jni.${nativeSuffix} ${nativeDir}
 else
   echo "Unable to obtain required libed25519jni ${mode} libraries. Exiting."
   exit 1

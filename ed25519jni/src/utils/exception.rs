@@ -23,19 +23,15 @@ type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 // at the Java side. So this function should be used only for the `panic::catch_unwind` result.
 pub fn unwrap_exc_or<T>(env: &JNIEnv, res: ExceptionResult<T>, error_val: T) -> T {
     match res {
-        Ok(val) => {
-            match val {
-                Ok(val) => val,
-                Err(jni_error) => {
-                    // Do nothing if there is a pending Java-exception that will be thrown
-                    // automatically by the JVM when the native method returns.
-                    if !env.exception_check().unwrap() {
-                        // Throw a Java exception manually in case of an internal error.
-                        throw(env, &jni_error.to_string())
-                    }
-                    error_val
-                }
+        Ok(Ok(val)) => val,
+        Ok(Err(jni_error)) => {
+            // Do nothing if there is a pending Java-exception that will be thrown
+            // automatically by the JVM when the native method returns.
+            if !env.exception_check().unwrap() {
+                // Throw a Java exception manually in case of an internal error.
+                throw(env, &jni_error.to_string())
             }
+            error_val
         }
         Err(ref e) => {
             throw(env, &any_to_string(e));

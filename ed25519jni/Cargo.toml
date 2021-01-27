@@ -13,5 +13,5 @@ jni = "0.18.0"
 
 [lib]
 name = "ed25519jni"
-path = "src/main/rust/lib.rs"
+path = "src/lib.rs"
 crate-type = ["staticlib", "cdylib"]

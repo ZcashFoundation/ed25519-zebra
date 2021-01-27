@@ -33,6 +33,11 @@ once_cell = "1.4"
 nightly = []
 default = ["serde"]
 
+[workspace]
+members = [
+    "ed25519jni",
+]
+
 [[test]]
 name = "rfc8032"
 
