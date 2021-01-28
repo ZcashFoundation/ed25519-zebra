@@ -41,25 +41,7 @@ ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
 ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "2" }
 ```
 
-## JNI
-
-Code that provides a [JNI](https://en.wikipedia.org/wiki/Java_Native_Interface) for the library is included. Tests written in Scala have also been included. In order to run the tests, follow the [JAR deployment method](#jar) listed below.
-
-To build the JNI code, run `cargo build` in the `ed25519jni` subdirectory. The generated Rust libraries can then be used, alongside the included Java interface file, in two different manners.
-
-### Direct library usage
-
-Use a preferred method to load the Rust libraries directly and include the Java interface file in your project. 
-
-### JAR
-<a name="jar"></a>
-
-It's possible to generate a JAR that can be loaded into a project via [SciJava's NativeLoader](https://javadoc.scijava.org/SciJava/org/scijava/nativelib/NativeLoader.html), along with the Java JNI interface file. There are two steps involved.
-
-- Once the Rust code has been compiled, run `jni_jar_prereq.sh` from the root directory.
-- Run `sbt publishLocal` from the root directory. (`sbt packageBin` can be used instead to build and place the JAR in `ed25519jni/target` but the resultant JAR won't be auto-loaded via NativeLoader.)
-
-## Library Usage Example
+## Example
 
 ```
 use std::convert::TryFrom;
