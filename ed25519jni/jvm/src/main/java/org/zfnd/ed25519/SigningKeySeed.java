@@ -5,58 +5,72 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Java wrapper class for signing key seeds that performs some sanity checking.
+/**
+ * Java wrapper class for signing key seeds that performs some sanity checking.
+ */
 public class SigningKeySeed {
-    public static final int SEED_LENGTH = 32;
+    public static final int BYTE_LENGTH = 32;
     private static final Logger logger = LoggerFactory.getLogger(SigningKeySeed.class);
-    private byte[] seed = new byte[SEED_LENGTH];
+
+    private byte[] seed;
 
     // Determining if bytes are valid is pretty trivial. Rust code not needed.
-    private static boolean bytesAreValid(final byte[] seedBytes) {
-        boolean valid = false;
-        if(seedBytes.length == SEED_LENGTH) {
-            for (int b = 0; b < SEED_LENGTH; b++) {
+    static boolean bytesAreValid(final byte[] seedBytes) {
+        if(seedBytes.length == BYTE_LENGTH) {
+            for (int b = 0; b < BYTE_LENGTH; b++) {
                 if (seedBytes[b] != 0) {
-                    valid = true;
-                    break;
+                    return true;
                 }
             }
         }
 
-        return valid;
+        return false;
     }
 
-    public SigningKeySeed(final byte[] seedBytes) {
-        if(bytesAreValid(seedBytes)) {
-            seed = Arrays.copyOf(seedBytes, SEED_LENGTH);
-        }
-        else {
-            throw new IllegalArgumentException("Attempted to create invalid signing "
-                + "key seed - Bytes were invalid");
-        }
+    SigningKeySeed(final byte[] seed) {
+        // package protected constructor
+        // assumes valid values from us or underlying library and that the caller will not mutate them
+        this.seed = seed;
     }
 
-    public byte[] getSigningKeySeed() {
+    /**
+     * @return a copy of the wrapped bytes
+     */
+    public byte[] getSigningKeySeedCopy() {
+        return seed.clone();
+    }
+
+    byte[] getSigningKeySeed() {
         return seed;
     }
 
-    public static Optional<SigningKeySeed> fromBytes(final byte[] seedBytes) {
-        Optional<SigningKeySeed> sks = Optional.empty();
+    /**
+     * Optionally convert bytes into a signing key seed wrapper.
+     *
+     * @param bytes untrusted, unvalidated bytes that may be a valid signing key seed
+     * @return optionally a signing key seed wrapper, if bytes are valid
+     */
+    public static Optional<SigningKeySeed> fromBytes(final byte[] bytes) {
+        // input is mutable and from untrusted source, so take a copy
+        final byte[] cloneBytes = bytes.clone();
 
-        try {
-            sks = Optional.of(new SigningKeySeed(seedBytes));
+        if (bytesAreValid(cloneBytes)) {
+            return Optional.of(new SigningKeySeed(cloneBytes));
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Attempted to create invalid signing key seed - Illegal "
-                + "argument exception has been caught and ignored");
-        }
-        finally {
-            return sks;
+        else {
+            return Optional.empty();
         }
     }
 
-    public static SigningKeySeed fromBytesOrThrow(final byte[] seedBytes) {
-        // The constructor already throws, so this method can YOLO the creation.
-        return new SigningKeySeed(seedBytes);
+    /**
+     * Convert bytes into a signing key seed wrapper.
+     *
+     * @param bytes bytes that are expected be a valid signing key seed
+     * @return a signing key seed wrapper, if bytes are valid
+     * @throws IllegalArgumentException if bytes are invalid
+     */
+    public static SigningKeySeed fromBytesOrThrow(final byte[] bytes) {
+        return fromBytes(bytes)
+            .orElseThrow(() -> new IllegalArgumentException("Expected " + BYTE_LENGTH + " bytes where not all are zero!"));
     }
 }

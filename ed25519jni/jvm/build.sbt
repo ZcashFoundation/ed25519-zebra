@@ -8,14 +8,18 @@ scalaVersion := "2.12.10"
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "140")
 
-autoScalaLibrary := false
+autoScalaLibrary := false // exclude scala-library from dependencies
 
-crossPaths := false
+crossPaths := false // drop off Scala suffix from artifact names.
 
 libraryDependencies ++= Deps.ed25519jni
 
 unmanagedResourceDirectories in Compile += baseDirectory.value / "natives"
 
 publishArtifact := true
+
+javacOptions in (Compile,doc) ++= Seq(
+  "-windowtitle", "JNI bindings for ed25519-zebra"
+)
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
