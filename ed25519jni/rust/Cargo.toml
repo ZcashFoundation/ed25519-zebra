@@ -1,6 +1,6 @@
 [package]
 name = "ed25519jni"
-version = "0.0.1"
+version = "0.0.4-JNI-DEV"
 authors = ["Douglas Roark <douglas.roark@gemini.com>"]
 license = "MIT OR Apache-2.0"
 publish = false

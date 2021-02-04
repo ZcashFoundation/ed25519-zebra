@@ -2,7 +2,7 @@ organization := "org.zfnd"
 
 name := "ed25519jni"
 
-version := "0.0.4-DEV"
+version := "0.0.4-JNI-DEV"
 
 scalaVersion := "2.12.10"
 
