@@ -15,7 +15,7 @@ public class VerificationKeyBytes {
     private byte[] vkb;
 
     // Determining if bytes are valid is complicated. Call into Rust.
-    private static boolean bytesAreValid(final byte[] verificationKeyBytes) {
+    static boolean bytesAreValid(final byte[] verificationKeyBytes) {
         return (verificationKeyBytes.length == BYTE_LENGTH) && Ed25519Interface.checkVerificationKeyBytes(verificationKeyBytes);
     }
 
@@ -64,5 +64,22 @@ public class VerificationKeyBytes {
     public static VerificationKeyBytes fromBytesOrThrow(final byte[] bytes) {
         return fromBytes(bytes)
             .orElseThrow(() -> new IllegalArgumentException("Expected " + BYTE_LENGTH + " bytes that encode a verification key!"));
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (other == this) {
+            return true;
+        } else if (other instanceof VerificationKeyBytes) {
+            final VerificationKeyBytes that = (VerificationKeyBytes) other;
+            return Arrays.equals(that.vkb, this.vkb);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return 23 * vkb.hashCode();
     }
 }
