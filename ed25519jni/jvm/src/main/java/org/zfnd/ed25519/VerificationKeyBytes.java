@@ -80,6 +80,6 @@ public class VerificationKeyBytes {
 
     @Override
     public int hashCode() {
-        return 23 * vkb.hashCode();
+        return 23 * Arrays.hashCode(this.vkb);
     }
 }
