@@ -106,8 +106,8 @@ public class Ed25519Interface {
    * @return signature data
    * @throws RuntimeException on error in libed25519
    */
-  public static byte[] sign(SigningKeySeed seed, byte[] message) {
-    return sign(seed.getSigningKeySeed(), message);
+  public static Signature sign(SigningKeySeed seed, byte[] message) {
+    return new Signature(sign(seed.getSigningKeySeed(), message));
   }
 
   /**
@@ -130,7 +130,7 @@ public class Ed25519Interface {
    * @return true if verified, false if not
    * @throws RuntimeException on error in libed25519
    */
-  public static boolean verify(VerificationKeyBytes verificationKey, byte[] signature, byte[] message) {
-    return verify(verificationKey.getVerificationKeyBytes(), signature, message);
+  public static boolean verify(VerificationKeyBytes verificationKey, Signature signature, byte[] message) {
+    return verify(verificationKey.getVerificationKeyBytes(), signature.getSignatureBytes(), message);
   }
 }
