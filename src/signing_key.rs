@@ -1,9 +1,19 @@
-use core::convert::TryFrom;
+const OID: ObjectIdentifier = ObjectIdentifier::new("1.3.101.112");  // RFC 8410
+const ALGORITHM_ID: AlgorithmIdentifier = AlgorithmIdentifier {
+        oid: OID,
+        parameters: None,
+    };
 
+use core::convert::TryFrom;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
 use zeroize::Zeroize;
+
+#[cfg(feature = "pem")]
+use pkcs8::FromPrivateKey;
+#[cfg(any(feature = "pem", feature = "std"))]
+use pkcs8::{AlgorithmIdentifier, ObjectIdentifier, PrivateKeyDocument, PrivateKeyInfo, ToPrivateKey};
 
 use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
 
@@ -101,6 +111,49 @@ impl From<[u8; 32]> for SigningKey {
                 A_bytes: VerificationKeyBytes(A.compress().to_bytes()),
             },
         }
+    }
+}
+
+impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
+    type Error = Error;
+    fn try_from(pki: PrivateKeyInfo) -> Result<Self, Error> {
+        if pki.algorithm == ALGORITHM_ID {
+            SigningKey::try_from(pki.private_key)
+        } else {
+            Err(Error::MalformedSecretKey)
+        }
+    }
+}
+
+impl ToPrivateKey for SigningKey {
+    fn to_pkcs8_der(&self) -> PrivateKeyDocument {
+        PrivateKeyInfo {
+            algorithm: ALGORITHM_ID,
+            private_key: &self.seed,
+        }.into()
+    }
+}
+
+#[cfg(feature = "pem")]
+impl FromPrivateKey for SigningKey {
+    fn from_pkcs8_private_key_info(pki: PrivateKeyInfo<'_>) -> Result<Self, pkcs8::Error> {
+        SigningKey::try_from(pki.private_key).map_err(|_| pkcs8::Error::Decode)
+    }
+}
+
+#[cfg(feature = "pem")]
+impl From<PrivateKeyDocument> for SigningKey {
+    fn from(doc: PrivateKeyDocument) -> SigningKey {
+        let pki = doc.unwrap();
+        pki.private_key.try_into().expect("Ed25519 private key wasn't 32 bytes")
+    }
+}
+
+#[cfg(feature = "pem")]
+impl From<SigningKey> for PublicKeyDocument {
+    fn from(sk: SigningKey) -> Result<PublicKeyDocument, Error> {
+        let pki = PrivateKeyInfo::try_from(sk.seed).unwrap();
+        PublicKeyDocument::try_from(pki)
     }
 }
 

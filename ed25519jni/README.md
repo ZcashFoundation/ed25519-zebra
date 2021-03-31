@@ -47,3 +47,4 @@ Among other things, the JNI code can perform the following actions.
 * Generate a 32 byte verification key from a signing key seed.
 * Sign arbitrary data with a signing key seed.
 * Verify a signature for arbitrary data with verification key bytes (32 bytes).
+* Generate DER bytes and PEM strings for signing key seeds and verification key bytes, and read back the DER bytes and PEM strings into signing key seeds and verification key bytes.

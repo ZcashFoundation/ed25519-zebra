@@ -45,6 +45,52 @@ public class SigningKeySeed {
     }
 
     /**
+     * Generate a SigningKeySeed object from DER (RFC 8410) bytes.
+     *
+     * @param derBytes the encoded DER bytes
+     * @return a new SigningKeySeed object
+     */
+    public static SigningKeySeed generatePrivate(byte[] derBytes) {
+        return SigningKeySeed.fromBytesOrThrow(Ed25519Interface.generatePrivate(derBytes));
+    }
+
+    /**
+     * Generate a SigningKeySeed object from PEM (RFC 8410) bytes.
+     *
+     * @param pemString the encoded PEM string
+     * @return a new SigningKeySeed object
+     */
+    public static SigningKeySeed generatePrivatePEM(String pemString) {
+        return SigningKeySeed.fromBytesOrThrow(Ed25519Interface.generatePrivatePEM(pemString));
+    }
+
+    /**
+     * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
+     *
+     * @return the encoded DER bytes
+     */
+    public byte[] getEncoded() {
+        return Ed25519Interface.getSigningKeySeedEncoded(this);
+    }
+
+    /**
+     * Get the encoded PEM (RFC 8410) bytes for signing key seed bytes.
+     *
+     * @return the encoded PEM bytes
+     */
+    public String getPEM() {
+        return Ed25519Interface.getSigningKeySeedPEM(this);
+    }
+
+    public static String getAlgorithm() {
+        return "EdDSA";
+    }
+
+    public static String getFormat() {
+        return "PKCS#8";
+    }
+
+    /**
      * Optionally convert bytes into a signing key seed wrapper.
      *
      * @param bytes untrusted, unvalidated bytes that may be a valid signing key seed

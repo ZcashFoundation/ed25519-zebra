@@ -45,6 +45,24 @@ public class Signature {
         return completeSignature;
     }
 
+    public String getAlgorithm() {
+        return "Ed25519";
+    }
+
+    // Identity function.
+    public byte[] getEncoded() {
+        return getSignatureBytes();
+    }
+
+    // Identity function. Don't verify the bytes in any way.
+    public static Signature getFromEncoded(byte[] encodedBytes) {
+        if (encodedBytes.length != SIGNATURE_LENGTH) {
+            throw new IllegalArgumentException("Ed25519 signature must be " + SIGNATURE_LENGTH + " bytes large.");
+        }
+
+        return new Signature(encodedBytes);
+    }
+
     /**
      * Optionally convert bytes into a verification key wrapper.
      *
