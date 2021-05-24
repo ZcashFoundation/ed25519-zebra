@@ -6,13 +6,13 @@ use ed25519_zebra::*;
 
 #[test]
 fn encode_signing_key_to_der() {
-    let sk_bytes_string = "17ED9C73E9DB649EC189A612831C5FC570238207C1AA9DFBD2C53E3FF5E5EA85";
+    let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
     let mut sk_array = [0u8; 32];
     hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
 
     let sk = SigningKey::try_from(sk_array).unwrap();
     let pkd = sk.to_pkcs8_der();
-    let sk_bytes_der_string = "302c020100300506032b6570042017ed9c73e9db649ec189a612831c5fc570238207c1aa9dfbd2c53e3ff5e5ea85";
+    let sk_bytes_der_string = "302e020100300506032b657004220420d4ee72dbf913584ad5b6d8f1f769f8ad3afe7c28cbf1d4fbe097a88f44755842";
 
     assert_eq!(
         pkd.as_ref(),
@@ -22,14 +22,14 @@ fn encode_signing_key_to_der() {
 
 #[test]
 fn encode_signing_key_to_pem() {
-    let sk_bytes_string = "17ED9C73E9DB649EC189A612831C5FC570238207C1AA9DFBD2C53E3FF5E5EA85";
+    let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
     let mut sk_array = [0u8; 32];
     hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
 
     let sk = SigningKey::try_from(sk_array).unwrap();
     let pkd = sk.to_pkcs8_der();
     let pki = pkd.private_key_info();
-    let pem_bytes_string = "2d2d2d2d2d424547494e2050524956415445204b45592d2d2d2d2d0a4d43774341514177425159444b32567742434158375a787a3664746b6e73474a70684b4448462f4663434f43423847716e6676537854342f3965587168513d3d0a2d2d2d2d2d454e442050524956415445204b45592d2d2d2d2d";
+    let pem_bytes_string = "2d2d2d2d2d424547494e2050524956415445204b45592d2d2d2d2d0a4d43344341514177425159444b32567742434945494e5475637476354531684b31626259386664702b4b30362f6e776f792f48552b2b435871493945645668430a2d2d2d2d2d454e442050524956415445204b45592d2d2d2d2d";
 
     assert_eq!(
         &*pki.to_pem().as_bytes(),
@@ -39,7 +39,7 @@ fn encode_signing_key_to_pem() {
 
 #[test]
 fn encode_signing_key_to_pki() {
-    let sk_bytes_string = "17ED9C73E9DB649EC189A612831C5FC570238207C1AA9DFBD2C53E3FF5E5EA85";
+    let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
     let mut sk_array = [0u8; 32];
     hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
 
@@ -47,11 +47,13 @@ fn encode_signing_key_to_pki() {
     let pkd = sk.to_pkcs8_der();
     let pki = pkd.private_key_info();
 
+    let (octetstring_prefix, private_key) = pki.private_key.split_at(2);
     assert_eq!(pki.algorithm.oid, "1.3.101.112".parse().unwrap());
     assert_eq!(pki.algorithm.parameters, None);
 
+    assert_eq!(hex::encode(octetstring_prefix), "0420");
     assert_eq!(
-        pki.private_key,
+        private_key,
         sk_array
     );
 }

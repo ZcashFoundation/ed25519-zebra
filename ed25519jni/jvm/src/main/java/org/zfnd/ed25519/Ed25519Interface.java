@@ -65,7 +65,7 @@ public class Ed25519Interface {
    * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
    *
    * @param sks the signing key seed bytes
-   * @return the encoded DER bytes (46 bytes)
+   * @return the encoded DER bytes (48 bytes)
    */
   public static native byte[] getSigningKeySeedEncoded(byte[] sks);
 
@@ -73,7 +73,7 @@ public class Ed25519Interface {
    * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
    *
    * @param sks the signing key seed
-   * @return the encoded DER bytes (46 bytes)
+   * @return the encoded DER bytes (48 bytes)
    */
   public static byte[] getSigningKeySeedEncoded(SigningKeySeed sks) {
     return getSigningKeySeedEncoded(sks.getSigningKeySeedCopy());
@@ -100,7 +100,7 @@ public class Ed25519Interface {
   /**
    * Generate a SigningKeySeed object from DER (RFC 8410) bytes.
    *
-   * @param derBytes the encoded DER bytes (46 bytes)
+   * @param derBytes the encoded DER bytes (48 bytes)
    * @return a new SigningKeySeed object
    */
   public static native byte[] generatePrivate(byte[] derBytes);

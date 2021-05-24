@@ -81,7 +81,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivate(
     der_bytes: jbyteArray,
 ) -> jbyteArray {
     let res = panic::catch_unwind(|| {
-        let mut der_data = [0u8; 46];
+        let mut der_data = [0u8; 48];
         der_data.copy_from_slice(&env.convert_byte_array(der_bytes).unwrap());
         let sk = SigningKey::from_pkcs8_der(der_data.as_ref()).unwrap();
 
