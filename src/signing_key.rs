@@ -126,13 +126,10 @@ impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
 }
 
 impl ToPrivateKey for SigningKey {
-    fn to_pkcs8_der(&self) -> PrivateKeyDocument {
+    fn to_pkcs8_der(&self) -> pkcs8::Result<PrivateKeyDocument> {
         // In RFC 8410, the octet string containing the private key is encapsulated by
         // another octet string. Just add octet string bytes to the key.
-        let octetstring_bytes_string = "0420";
-        let mut octetstring_array = [0u8; 2];
-        hex::decode_to_slice(octetstring_bytes_string, &mut octetstring_array as &mut [u8]).ok();
-
+        let octetstring_array = [0x04, 0x20];
         let mut final_key = [0 as u8; 34];
         let mut key_byte_sequence =  octetstring_array.iter()
             .chain(self.seed.iter());
@@ -143,23 +140,17 @@ impl ToPrivateKey for SigningKey {
                 *slot = item.clone(); cnt+1
             });
 
-        PrivateKeyInfo {
-            algorithm: ALGORITHM_ID,
-            private_key: &final_key,
-        }.into()
+        Ok(PrivateKeyInfo::new(ALGORITHM_ID, &final_key).into())
     }
 }
 
 #[cfg(feature = "pem")]
 impl FromPrivateKey for SigningKey {
-    fn from_pkcs8_private_key_info(pki: PrivateKeyInfo<'_>) -> Result<Self, pkcs8::Error> {
+    fn from_pkcs8_private_key_info(pki: PrivateKeyInfo<'_>) -> pkcs8::Result<Self> {
         // Split off the extra octet string bytes.
-        let (octetstring_prefix, private_key) = pki.private_key.split_at(2);
-        if hex::encode(octetstring_prefix).ne("0420") {
-            Err(pkcs8::Error::Decode)
-        }
-        else {
-            SigningKey::try_from(private_key).map_err(|_| pkcs8::Error::Decode)
+        match &pki.private_key {
+            [0x04, 0x20, private_key @ ..] => SigningKey::try_from(private_key).map_err(|_| pkcs8::Error::Crypto),
+            _ => Err(der::Tag::OctetString.value_error().into())
         }
     }
 }

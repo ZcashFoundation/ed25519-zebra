@@ -190,7 +190,7 @@ impl TryFrom<[u8; 32]> for VerificationKey {
 }
 
 impl ToPublicKey for VerificationKey {
-    fn to_public_key_der(&self) -> PublicKeyDocument {
+    fn to_public_key_der(&self) -> pkcs8::Result<PublicKeyDocument> {
         let alg_info = AlgorithmIdentifier {
             oid: ObjectIdentifier::new("1.3.101.112"), // RFC 8410
             parameters: None,
@@ -200,19 +200,13 @@ impl ToPublicKey for VerificationKey {
             algorithm: alg_info,
             subject_public_key: &self.A_bytes.0[..],
         };
-        PublicKeyDocument::try_from(spki).unwrap()
+        PublicKeyDocument::try_from(spki).map_err(|_| pkcs8::Error::Crypto)
     }
 }
 
 impl FromPublicKey for VerificationKey {
-    fn from_spki(spki: SubjectPublicKeyInfo<'_>) -> Result<Self, pkcs8::Error> {
-        let vk = VerificationKey::try_from(spki.subject_public_key);
-        if vk.is_ok() {
-            Ok(vk.unwrap())
-        }
-        else {
-            Err(pkcs8::Error::Decode)
-        }
+    fn from_spki(spki: SubjectPublicKeyInfo<'_>) -> pkcs8::Result<Self> {
+        VerificationKey::try_from(spki.subject_public_key).map_err(|_| pkcs8::Error::Crypto)
     }
 }
 

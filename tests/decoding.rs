@@ -21,7 +21,7 @@ fn decode_doc_to_signing_key() {
     hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
 
     let sk1 = SigningKey::try_from(sk_array).unwrap();
-    let pkd = sk1.to_pkcs8_der();
+    let pkd = sk1.to_pkcs8_der().unwrap();
 
     let sk2 = SigningKey::from_pkcs8_doc(&pkd).unwrap();
     assert_eq!(sk_array, sk2.as_ref());
@@ -56,7 +56,7 @@ fn decode_doc_to_verification_key() {
     hex::decode_to_slice(vk_bytes_string, &mut vk_array as &mut [u8]).ok();
 
     let vk1 = VerificationKey::try_from(vk_array).unwrap();
-    let pkd = vk1.to_public_key_der();
+    let pkd = vk1.to_public_key_der().unwrap();
 
     let vk2 = VerificationKey::from_public_key_doc(&pkd).unwrap();
     assert_eq!(vk_array, vk2.as_ref());

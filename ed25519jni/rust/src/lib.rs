@@ -50,7 +50,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedE
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        Ok(env.byte_array_from_slice(sk.to_pkcs8_der().as_ref()).unwrap())
+        Ok(env.byte_array_from_slice(sk.to_pkcs8_der().unwrap().as_ref()).unwrap())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -67,7 +67,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedP
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        let output = env.new_string(&*sk.to_pkcs8_pem()).expect("Couldn't create SKS PEM string!");
+        let output = env.new_string(&*sk.to_pkcs8_pem().unwrap()).expect("Couldn't create SKS PEM string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -119,7 +119,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
 
         let vkb = VerificationKeyBytes::try_from(vk_data).unwrap();
         let vk = VerificationKey::try_from(vkb).unwrap();
-        Ok(env.byte_array_from_slice(vk.to_public_key_der().as_ref()).unwrap())
+        Ok(env.byte_array_from_slice(vk.to_public_key_der().unwrap().as_ref()).unwrap())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -136,7 +136,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
         vkb.copy_from_slice(&env.convert_byte_array(vk_bytes).unwrap());
         let vk = VerificationKey::try_from(VerificationKeyBytes::from(vkb)).unwrap();
 
-        let output = env.new_string(vk.to_public_key_pem()).expect("Couldn't create VKB PEM string!");
+        let output = env.new_string(vk.to_public_key_pem().unwrap()).expect("Couldn't create VKB PEM string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
