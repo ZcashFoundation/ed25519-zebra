@@ -28,14 +28,11 @@ fn decode_doc_to_signing_key() {
 }
 
 #[test]
+#[cfg(feature = "pem")]
 fn decode_pem_to_signing_key() {
     let pem_bytes_string = "2d2d2d2d2d424547494e2050524956415445204b45592d2d2d2d2d0a4d43344341514177425159444b32567742434945494e5475637476354531684b31626259386664702b4b30362f6e776f792f48552b2b435871493945645668430a2d2d2d2d2d454e442050524956415445204b45592d2d2d2d2d";
-    let mut pem_bytes = [0u8; 118];
-    hex::decode_to_slice(pem_bytes_string, &mut pem_bytes as &mut [u8]).ok();
-    let sk = SigningKey::from_pkcs8_pem(String::from_utf8_lossy(pem_bytes.as_ref()).as_ref()).unwrap();
-
     let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
-    assert_eq!(hex::decode(sk_bytes_string).unwrap(), sk.as_ref());
+    assert_eq!(hex::decode(sk_bytes_string).unwrap(), pem_bytes_string.parse().unwrap());
 }
 
 #[test]
@@ -63,12 +60,9 @@ fn decode_doc_to_verification_key() {
 }
 
 #[test]
+#[cfg(feature = "pem")]
 fn decode_pem_to_verification_key() {
     let pem_bytes_string = "2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d436f77425159444b3256774179454154536b57667a385a4571623372666f704f67556146634265786e755046795a3748465651334f68547651303d0a2d2d2d2d2d454e44205055424c4943204b45592d2d2d2d2d";
-    let mut pem_bytes = [0u8; 112];
-    hex::decode_to_slice(pem_bytes_string, &mut pem_bytes as &mut [u8]).ok();
-    let vk = VerificationKey::from_public_key_pem(String::from_utf8_lossy(pem_bytes.as_ref()).as_ref()).unwrap();
-
     let vk_bytes_string = "4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d";
-    assert_eq!(hex::decode(vk_bytes_string).unwrap(), vk.as_ref());
+    assert_eq!(hex::decode(vk_bytes_string).unwrap(), pem_bytes_string.parse().unwrap())
 }

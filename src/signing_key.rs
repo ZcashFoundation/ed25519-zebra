@@ -4,7 +4,7 @@ const ALGORITHM_ID: AlgorithmIdentifier = AlgorithmIdentifier {
         parameters: None,
     };
 
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto,};
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
@@ -16,6 +16,9 @@ use pkcs8::FromPrivateKey;
 use pkcs8::{AlgorithmIdentifier, ObjectIdentifier, PrivateKeyDocument, PrivateKeyInfo, ToPrivateKey};
 
 use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
+
+#[cfg(feature = "pem")]
+use {crate::pem, alloc::string::String, core::str::FromStr};
 
 /// An Ed25519 signing key.
 ///
@@ -129,16 +132,9 @@ impl ToPrivateKey for SigningKey {
     fn to_pkcs8_der(&self) -> pkcs8::Result<PrivateKeyDocument> {
         // In RFC 8410, the octet string containing the private key is encapsulated by
         // another octet string. Just add octet string bytes to the key.
-        let octetstring_array = [0x04, 0x20];
-        let mut final_key = [0 as u8; 34];
-        let mut key_byte_sequence =  octetstring_array.iter()
-            .chain(self.seed.iter());
-        let _bytes_written = key_byte_sequence
-            .by_ref()
-            .zip(final_key.as_mut())
-            .fold(0, | cnt, (item, slot) | {
-                *slot = item.clone(); cnt+1
-            });
+        let mut final_key = [0u8; 34];
+        final_key[..2].copy_from_slice(&[0x04, 0x20]);
+        final_key[2..].copy_from_slice(&self.seed);
 
         Ok(PrivateKeyInfo::new(ALGORITHM_ID, &final_key).into())
     }
@@ -213,5 +209,22 @@ impl SigningKey {
         let s_bytes = (r + k * self.s).to_bytes();
 
         Signature { R_bytes, s_bytes }
+    }
+
+    /// Parse [`SigningKey`] from ASN.1 DER
+    pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
+        bytes.try_into().map_err(|_| pkcs8::Error::Crypto)
+    }
+
+    #[cfg(feature = "pem")]
+    pub fn from_pem(s: &str) -> pkcs8::Result<Self> {
+        let der_bytes = pem::decode(s, pem::PUBLIC_KEY_BOUNDARY)?;
+        Self::from_der(&*der_bytes)
+    }
+
+    /// Serialize [`SigningKey`] as PEM-encoded PKCS#8 string.
+    #[cfg(feature = "pem")]
+    pub fn to_pem(&self) -> String {
+        pem::encode(&self.0, pem::PUBLIC_KEY_BOUNDARY)
     }
 }

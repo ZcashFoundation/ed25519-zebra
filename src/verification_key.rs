@@ -14,6 +14,9 @@ use pkcs8::{AlgorithmIdentifier, FromPublicKey, ObjectIdentifier, PublicKeyDocum
 
 use crate::{Error, Signature};
 
+#[cfg(feature = "pem")]
+use {crate::pem, alloc::string::String, core::str::FromStr};
+
 /// A refinement type for `[u8; 32]` indicating that the bytes represent an
 /// encoding of an Ed25519 verification key.
 ///
@@ -37,6 +40,25 @@ use crate::{Error, Signature};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
+
+impl VerificationKeyBytes {
+    /// Parse [`VerificationKeyBytes`] from ASN.1 DER
+    pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
+        bytes.try_into().map_err(|_| pkcs8::Error::Crypto)
+    }
+
+    #[cfg(feature = "pem")]
+    pub fn from_pem(s: &str) -> pkcs8::Result<Self> {
+        let der_bytes = pem::decode(s, pem::PUBLIC_KEY_BOUNDARY)?;
+        Self::from_der(&*der_bytes)
+    }
+
+    /// Serialize [`VerificationKeyBytes`] as PEM-encoded PKCS#8 string.
+    #[cfg(feature = "pem")]
+    pub fn to_pem(&self) -> String {
+        pem::encode(&self.0, pem::PUBLIC_KEY_BOUNDARY)
+    }
+}
 
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -77,15 +99,17 @@ impl From<VerificationKeyBytes> for [u8; 32] {
     }
 }
 
-impl<'a> From<SubjectPublicKeyInfo<'a>> for VerificationKeyBytes {
-    fn from(spki: SubjectPublicKeyInfo) -> VerificationKeyBytes {
-        VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfo doesn't return 32 bytes"))
+impl<'a> TryFrom<SubjectPublicKeyInfo<'a>> for VerificationKeyBytes {
+    type Error = Error;
+
+    fn try_from(spki: SubjectPublicKeyInfo) -> Result<VerificationKeyBytes, Error> {
+        Ok(VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfo doesn't return 32 bytes")))
     }
 }
 
 #[cfg(feature = "pem")]
-impl From<PublicKeyDocument> for VerificationKeyBytes {
-    fn from(doc: PublicKeyDocument) -> VerificationKeyBytes {
+impl TryFrom<PublicKeyDocument> for VerificationKeyBytes {
+    fn try_from(doc: PublicKeyDocument) -> Result<VerificationKeyBytes, Error> {
         let spki = doc.unwrap();
         VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfo doesn't return 32 bytes"))
     }
@@ -96,6 +120,15 @@ impl From<VerificationKeyBytes> for PublicKeyDocument {
     fn from(bytes: VerificationKeyBytes) -> Result<PublicKeyDocument, Error> {
         let spki = SubjectPublicKeyInfo::try_from(bytes.0).unwrap();
         PublicKeyDocument::try_from(spki)
+    }
+}
+
+#[cfg(feature = "pem")]
+impl FromStr for VerificationKeyBytes {
+    type Err = Error;
+
+    fn from_str(s: &str) -> pkcs8::Result<Self> {
+        Self::from_pem(s)
     }
 }
 
