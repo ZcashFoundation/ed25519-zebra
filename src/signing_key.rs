@@ -1,10 +1,22 @@
-use std::convert::TryFrom;
+const OID: ObjectIdentifier = ObjectIdentifier::new("1.3.101.112");  // RFC 8410
+const ALGORITHM_ID: AlgorithmIdentifier = AlgorithmIdentifier {
+        oid: OID,
+        parameters: None,
+    };
 
+use std::convert::{TryFrom, TryInto,};
 use curve25519_dalek::{constants, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
+use pkcs8::{AlgorithmIdentifier, der, FromPrivateKey, ObjectIdentifier, PrivateKeyDocument, PrivateKeyInfo, ToPrivateKey};
+
+#[cfg(any(feature = "pem", feature = "std"))]
+use pkcs8::PrivateKeyDocument;
 
 use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
+
+#[cfg(feature = "pem")]
+use {crate::pem, alloc::string::String, core::str::FromStr};
 
 /// An Ed25519 signing key.
 ///
@@ -106,6 +118,55 @@ impl From<[u8; 32]> for SigningKey {
     }
 }
 
+impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
+    type Error = Error;
+    fn try_from(pki: PrivateKeyInfo) -> Result<Self, Error> {
+        if pki.algorithm == ALGORITHM_ID {
+            SigningKey::try_from(pki.private_key)
+        } else {
+            Err(Error::MalformedSecretKey)
+        }
+    }
+}
+
+impl ToPrivateKey for SigningKey {
+    fn to_pkcs8_der(&self) -> pkcs8::Result<PrivateKeyDocument> {
+        // In RFC 8410, the octet string containing the private key is encapsulated by
+        // another octet string. Just add octet string bytes to the key.
+        let mut final_key = [0u8; 34];
+        final_key[..2].copy_from_slice(&[0x04, 0x20]);
+        final_key[2..].copy_from_slice(&self.seed);
+
+        Ok(PrivateKeyInfo::new(ALGORITHM_ID, &final_key).into())
+    }
+}
+
+impl FromPrivateKey for SigningKey {
+    fn from_pkcs8_private_key_info(pki: PrivateKeyInfo<'_>) -> pkcs8::Result<Self> {
+        // Split off the extra octet string bytes.
+        match &pki.private_key {
+            [0x04, 0x20, private_key @ ..] => SigningKey::try_from(private_key).map_err(|_| pkcs8::Error::Crypto),
+            _ => Err(der::Tag::OctetString.value_error().into())
+        }
+    }
+}
+
+#[cfg(feature = "pem")]
+impl From<PrivateKeyDocument> for SigningKey {
+    fn from(doc: PrivateKeyDocument) -> SigningKey {
+        let pki = doc.unwrap();
+        pki.private_key.try_into().expect("Ed25519 private key wasn't 32 bytes")
+    }
+}
+
+#[cfg(feature = "pem")]
+impl From<SigningKey> for PublicKeyDocument {
+    fn from(sk: SigningKey) -> Result<PublicKeyDocument, Error> {
+        let pki = PrivateKeyInfo::try_from(sk.seed).unwrap();
+        PublicKeyDocument::try_from(pki)
+    }
+}
+
 impl zeroize::Zeroize for SigningKey {
     fn zeroize(&mut self) {
         self.seed.zeroize();
@@ -155,5 +216,22 @@ impl SigningKey {
         let s_bytes = (r + k * self.s).to_bytes();
 
         Signature { R_bytes, s_bytes }
+    }
+
+    /// Parse [`SigningKey`] from ASN.1 DER
+    pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
+        bytes.try_into().map_err(|_| pkcs8::Error::Crypto)
+    }
+
+    #[cfg(feature = "pem")]
+    pub fn from_pem(s: &str) -> pkcs8::Result<Self> {
+        let der_bytes = pem::decode(s, pem::PUBLIC_KEY_BOUNDARY)?;
+        Self::from_der(&*der_bytes)
+    }
+
+    /// Serialize [`SigningKey`] as PEM-encoded PKCS#8 string.
+    #[cfg(feature = "pem")]
+    pub fn to_pem(&self) -> String {
+        pem::encode(&self.0, pem::PUBLIC_KEY_BOUNDARY)
     }
 }

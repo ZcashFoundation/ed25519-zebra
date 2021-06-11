@@ -1,6 +1,8 @@
 package org.zfnd.ed25519
 
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
+import java.util.Arrays
 import org.scalatest.{ FlatSpec, MustMatchers }
 import scala.collection.mutable.HashSet
 
@@ -44,5 +46,42 @@ class VerificationKeyBytesTest extends FlatSpec with MustMatchers {
     RANDOM.nextBytes(vkb1)
     val vkbObj1 = VerificationKeyBytes.fromBytes(vkb1)
     vkbObj1.isPresent() mustBe false
+  }
+
+  it must "wrap VerificationKeyBytes (RFC 8410 - DER)" in {
+    val vkbValue = BigInt("4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    val vkb = VerificationKeyBytes.fromBytesOrThrow(vkbValue.toByteArray)
+
+    val vkb_der = vkb.getEncoded()
+
+    val expected_der = BigInt("302a300506032b65700321004d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    Arrays.equals(vkb_der, expected_der.toByteArray) mustBe true
+  }
+
+  it must "wrap VerificationKeyBytes (RFC 8410 - PEM)" in {
+    val vkbValue = BigInt("4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    val vkb = VerificationKeyBytes.fromBytesOrThrow(vkbValue.toByteArray)
+
+    val vkb_pem = vkb.getPEM()
+
+    val expected_pem = BigInt("2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d436f77425159444b3256774179454154536b57667a385a4571623372666f704f67556146634265786e755046795a3748465651334f68547651303d0a2d2d2d2d2d454e44205055424c4943204b45592d2d2d2d2d", 16)
+    Arrays.equals(vkb_pem.getBytes(), expected_pem.toByteArray) mustBe true
+  }
+
+  it must "decode DER encoding (RFC 8410) to VerificationKeyBytes" in {
+    val der = BigInt("302a300506032b65700321004d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    val vkb = VerificationKeyBytes.generatePublic(der.toByteArray)
+
+    val expected_vkb = BigInt("4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    Arrays.equals(vkb.getVerificationKeyBytes, expected_vkb.toByteArray) mustBe true
+  }
+
+  it must "decode PEM encoding (RFC 8410) to VerificationKeyBytes" in {
+    val pem = BigInt("2d2d2d2d2d424547494e205055424c4943204b45592d2d2d2d2d0a4d436f77425159444b3256774179454154536b57667a385a4571623372666f704f67556146634265786e755046795a3748465651334f68547651303d0a2d2d2d2d2d454e44205055424c4943204b45592d2d2d2d2d", 16)
+    val pem_str = new String(pem.toByteArray, StandardCharsets.UTF_8)
+    val vkb = VerificationKeyBytes.generatePublicPEM(pem_str)
+
+    val expected_vkb = BigInt("4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d", 16)
+    Arrays.equals(vkb.getVerificationKeyBytesCopy, expected_vkb.toByteArray) mustBe true
   }
 }
