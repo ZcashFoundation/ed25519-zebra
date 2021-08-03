@@ -110,6 +110,6 @@ mod tests {
     }
 
     fn panic_error<T: Send + 'static>(val: T) -> Box<dyn Any + Send> {
-        panic::catch_unwind(panic::AssertUnwindSafe(|| panic!(val))).unwrap_err()
+        panic::catch_unwind(panic::AssertUnwindSafe(|| std::panic::panic_any(val))).unwrap_err()
     }
 }
