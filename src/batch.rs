@@ -50,7 +50,7 @@
 
 use std::{collections::HashMap, convert::TryFrom};
 
-use curve25519_dalek::{
+use curve25519_dalek_ng::{
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::{IsIdentity, VartimeMultiscalarMul},
@@ -202,7 +202,7 @@ impl Verifier {
             A_coeffs.push(A_coeff);
         }
 
-        use curve25519_dalek::constants::ED25519_BASEPOINT_POINT as B;
+        use curve25519_dalek_ng::constants::ED25519_BASEPOINT_POINT as B;
         use std::iter::once;
         let check = EdwardsPoint::vartime_multiscalar_mul(
             once(&B_coeff).chain(A_coeffs.iter()).chain(R_coeffs.iter()),

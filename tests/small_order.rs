@@ -1,5 +1,5 @@
 use color_eyre::Report;
-use curve25519_dalek::{
+use curve25519_dalek_ng::{
     constants::EIGHT_TORSION, edwards::CompressedEdwardsY, scalar::Scalar, traits::IsIdentity,
 };
 use once_cell::sync::Lazy;

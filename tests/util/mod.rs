@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 use color_eyre::{eyre::eyre, Report};
-use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
+use curve25519_dalek_ng::edwards::{CompressedEdwardsY, EdwardsPoint};
 use ed25519_zebra as ed25519_zebra_zip215;
 
 use std::convert::TryFrom;
@@ -168,7 +168,7 @@ fn print_non_canonical_points() {
 }
 
 pub fn order(point: EdwardsPoint) -> &'static str {
-    use curve25519_dalek::traits::IsIdentity;
+    use curve25519_dalek_ng::traits::IsIdentity;
     if point.is_small_order() {
         let point2 = point + point;
         let point4 = point2 + point2;

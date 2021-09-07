@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
-use curve25519_dalek::{
+use curve25519_dalek_ng::{
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::IsIdentity,
