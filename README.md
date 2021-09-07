@@ -1,3 +1,6 @@
+[![Build status](https://github.com/ZcashFoundation/ed25519-zebra/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/ZcashFoundation/ed25519-zebra/actions/workflows/main.yml?query=branch%3Amain)
+[![dependency status](https://deps.rs/repo/github/ZcashFoundation/ed25519-zebra/status.svg)](https://deps.rs/repo/github/ZcashFoundation/ed25519-zebra)
+
 Zcash-flavored Ed25519 for use in [Zebra][zebra].
 
 Zcash uses Ed25519 for [JoinSplit signatures][zcash_protocol_jssig] with
