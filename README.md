@@ -71,6 +71,14 @@ assert!(
 );
 ```
 
+## License
+
+ed25519-zebra is distributed under the terms of both the MIT license
+and the Apache License (Version 2.0).
+
+See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+
+
 [zcash_protocol_jssig]: https://zips.z.cash/protocol/protocol.pdf#concretejssig
 [RFC8032]: https://tools.ietf.org/html/rfc8032
 [zebra]: https://github.com/ZcashFoundation/zebra
