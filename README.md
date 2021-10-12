@@ -20,10 +20,10 @@ matching the Zcash consensus rules exactly.
 However, this library may be of independent interest, as it implements
 ZIP215, a set of precisely specified validation rules for Ed25519 that make
 individual verification consistent with batch verification and are
-backwards-compatible with all existing Ed25519 signatures. Any non-Zcash users 
+backwards-compatible with all existing Ed25519 signatures. Any non-Zcash users
 should use the ZIP215 rules:
 ```toml
-ed25519-zebra = "2"
+ed25519-zebra = "3"
 ```
 
 ## ZIP 215 and changes to Zcash-flavored Ed25519
@@ -36,12 +36,12 @@ dependence on validation rules inherited from a specific point release of
 verification. More details and motivation are available in the text of [ZIP215].
 
 The `1.x` series of this crate implements the legacy, pre-ZIP-215 validation
-criteria; the `2.x` series of this crate implements the post-ZIP-215
+criteria; the `2.x+` series of this crate implements the post-ZIP-215
 validation criteria.  Users (like Zebra or zcashd) who need to handle the
 upgrade can use both versions simultaneously using cargo renaming, e.g.,
 ```toml
 ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
-ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "2" }
+ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "3" }
 ```
 
 ## Example

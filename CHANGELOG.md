@@ -2,6 +2,14 @@
 
 Entries are listed in reverse chronological order.
 
+# 3.0.0
+
+* Fix typo by @rex4539 in https://github.com/ZcashFoundation/ed25519-zebra/pull/32
+* Add Zeroize impl for SigningKey by @kim in https://github.com/ZcashFoundation/ed25519-zebra/pull/34
+* Add JNI code for ed25519-zebra by @droark in https://github.com/ZcashFoundation/ed25519-zebra/pull/37
+* Update rand_core to 0.6 and rand to 0.8 by @dconnolly in https://github.com/ZcashFoundation/ed25519-zebra/pull/44
+* dependencies: update zeroize to 1.2 by @FintanH in https://github.com/ZcashFoundation/ed25519-zebra/pull/52
+
 # 2.2.0
 
 * Add `PartialOrd`, `Ord` implementations for `VerificationKeyBytes`.  While
