@@ -1,6 +1,11 @@
 name: CI
 
-on: [push]
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   test_nightly:
@@ -18,4 +23,3 @@ jobs:
       with:
         command: test
         args: --all-features
-
