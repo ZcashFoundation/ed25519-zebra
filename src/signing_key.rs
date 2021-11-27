@@ -14,10 +14,10 @@ use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
 #[cfg_attr(feature = "serde", serde(from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
 pub struct SigningKey {
-    seed: [u8; 32],
-    s: Scalar,
-    prefix: [u8; 32],
-    vk: VerificationKey,
+    pub seed: [u8; 32],
+    pub s: Scalar,
+    pub prefix: [u8; 32],
+    pub vk: VerificationKey,
 }
 
 impl core::fmt::Debug for SigningKey {
