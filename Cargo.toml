@@ -14,7 +14,7 @@ features = ["nightly"]
 
 [dependencies]
 hex = "0.4"
-sha2 = "0.9"
+sha2 = "0.10"
 rand_core = "0.6"
 thiserror = "1"
 curve25519-dalek = "3"
