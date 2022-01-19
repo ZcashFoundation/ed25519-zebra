@@ -48,13 +48,15 @@
 //!
 //! [ZIP215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
 
-use std::{collections::HashMap, convert::TryFrom};
+use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 use curve25519_dalek::{
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::{IsIdentity, VartimeMultiscalarMul},
 };
+use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
 
@@ -202,8 +204,8 @@ impl Verifier {
             A_coeffs.push(A_coeff);
         }
 
+        use core::iter::once;
         use curve25519_dalek::constants::ED25519_BASEPOINT_POINT as B;
-        use std::iter::once;
         let check = EdwardsPoint::vartime_multiscalar_mul(
             once(&B_coeff).chain(A_coeffs.iter()).chain(R_coeffs.iter()),
             once(&B).chain(As.iter()).chain(Rs.iter()),
