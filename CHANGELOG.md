@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+# 3.1.0
+
+* Add no_std support by @pvdrz in https://github.com/ZcashFoundation/ed25519-zebra/pull/57
+
 # 3.0.0
 
 * Fix typo by @rex4539 in https://github.com/ZcashFoundation/ed25519-zebra/pull/32
