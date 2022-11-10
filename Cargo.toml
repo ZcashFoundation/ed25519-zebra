@@ -20,7 +20,7 @@ rand_core = "0.6"
 curve25519-dalek = { version = "3", default-features = false, features = ["alloc", "u64_backend"] }
 serde = { version = "1", optional = true, features = ["derive"] }
 zeroize = "1.2"
-hashbrown = "0.12.0"
+hashbrown = "0.13.1"
 
 [dev-dependencies]
 rand = "0.8"
