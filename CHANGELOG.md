@@ -2,6 +2,12 @@
 
 Entries are listed in reverse chronological order.
 
+# 3.2.0
+
+* Updates `sha2` version to `0.10` and `curve25519-dalek` version to `4.0.0-pre.5`.
+
+MSRV increased to `1.60.0`.
+
 # 3.1.0
 
 * Add no_std support by @pvdrz in https://github.com/ZcashFoundation/ed25519-zebra/pull/57

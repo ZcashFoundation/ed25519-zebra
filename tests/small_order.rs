@@ -1,9 +1,10 @@
 use color_eyre::Report;
 use curve25519_dalek::{
-    constants::EIGHT_TORSION, edwards::CompressedEdwardsY, scalar::Scalar, traits::IsIdentity,
+    constants::EIGHT_TORSION, digest::Update, edwards::CompressedEdwardsY, scalar::Scalar,
+    traits::IsIdentity,
 };
 use once_cell::sync::Lazy;
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 
 mod util;
 use util::TestCase;
@@ -11,7 +12,7 @@ use util::TestCase;
 #[allow(non_snake_case)]
 pub static SMALL_ORDER_SIGS: Lazy<Vec<TestCase>> = Lazy::new(|| {
     let mut tests = Vec::new();
-    let s = Scalar::zero();
+    let s = Scalar::ZERO;
 
     // Use all the canonical encodings of the 8-torsion points,
     // and the low-order non-canonical encodings.

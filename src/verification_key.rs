@@ -1,11 +1,12 @@
 use core::convert::{TryFrom, TryInto};
 
 use curve25519_dalek::{
+    digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::IsIdentity,
 };
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 
 use crate::{Error, Signature};
 
@@ -14,7 +15,7 @@ use crate::{Error, Signature};
 ///
 /// This is useful for representing an encoded verification key, while the
 /// [`VerificationKey`] type in this library caches other decoded state used in
-/// signature verification.  
+/// signature verification.
 ///
 /// A `VerificationKeyBytes` can be used to verify a single signature using the
 /// following idiom:
@@ -185,7 +186,8 @@ impl VerificationKey {
     #[allow(non_snake_case)]
     pub(crate) fn verify_prehashed(&self, signature: &Signature, k: Scalar) -> Result<(), Error> {
         // `s_bytes` MUST represent an integer less than the prime `l`.
-        let s = Scalar::from_canonical_bytes(signature.s_bytes).ok_or(Error::InvalidSignature)?;
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(signature.s_bytes))
+            .ok_or(Error::InvalidSignature)?;
         // `R_bytes` MUST be an encoding of a point on the twisted Edwards form of Curve25519.
         let R = CompressedEdwardsY(signature.R_bytes)
             .decompress()
