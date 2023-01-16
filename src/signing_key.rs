@@ -1,6 +1,6 @@
 use core::convert::TryFrom;
 
-use curve25519_dalek::{constants, scalar::Scalar};
+use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
 

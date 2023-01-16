@@ -52,13 +52,14 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use curve25519_dalek::{
+    digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::{IsIdentity, VartimeMultiscalarMul},
 };
 use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 
 use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
 
@@ -179,20 +180,21 @@ impl Verifier {
         let mut As = Vec::with_capacity(m);
         let mut R_coeffs = Vec::with_capacity(self.batch_size);
         let mut Rs = Vec::with_capacity(self.batch_size);
-        let mut B_coeff = Scalar::zero();
+        let mut B_coeff = Scalar::ZERO;
 
         for (vk_bytes, sigs) in self.signatures.iter() {
             let A = CompressedEdwardsY(vk_bytes.0)
                 .decompress()
                 .ok_or(Error::InvalidSignature)?;
 
-            let mut A_coeff = Scalar::zero();
+            let mut A_coeff = Scalar::ZERO;
 
             for (k, sig) in sigs.iter() {
                 let R = CompressedEdwardsY(sig.R_bytes)
                     .decompress()
                     .ok_or(Error::InvalidSignature)?;
-                let s = Scalar::from_canonical_bytes(sig.s_bytes).ok_or(Error::InvalidSignature)?;
+                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(sig.s_bytes))
+                    .ok_or(Error::InvalidSignature)?;
                 let z = Scalar::from(gen_u128(&mut rng));
                 B_coeff -= z * s;
                 Rs.push(R);
