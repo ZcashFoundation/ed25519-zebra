@@ -1,8 +1,8 @@
 const OID: ObjectIdentifier = ObjectIdentifier::new("1.3.101.112");  // RFC 8410
 const ALGORITHM_ID: AlgorithmIdentifier = AlgorithmIdentifier {
-        oid: OID,
-        parameters: None,
-    };
+    oid: OID,
+    parameters: None,
+};
 
 use core::convert::{TryFrom, TryInto,};
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
@@ -11,7 +11,7 @@ use sha2::{Digest, Sha512};
 use zeroize::Zeroize;
 
 #[cfg(feature = "pem")]
-use pkcs8::FromPrivateKey;
+use pkcs8::{der, FromPrivateKey};
 #[cfg(any(feature = "pem", feature = "std"))]
 use pkcs8::{AlgorithmIdentifier, ObjectIdentifier, PrivateKeyDocument, PrivateKeyInfo, ToPrivateKey};
 
@@ -143,6 +143,11 @@ impl ToPrivateKey for SigningKey {
 #[cfg(feature = "pem")]
 impl FromPrivateKey for SigningKey {
     fn from_pkcs8_private_key_info(pki: PrivateKeyInfo<'_>) -> pkcs8::Result<Self> {
+        pki.algorithm.assert_algorithm_oid(OID)?;
+        if pki.algorithm.parameters.is_some() {
+            return Err(pkcs8::Error::ParametersMalformed);
+        }
+
         // Split off the extra octet string bytes.
         match &pki.private_key {
             [0x04, 0x20, private_key @ ..] => SigningKey::try_from(private_key).map_err(|_| pkcs8::Error::Crypto),

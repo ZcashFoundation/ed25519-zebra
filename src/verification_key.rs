@@ -1,5 +1,4 @@
 use core::convert::{TryFrom, TryInto};
-
 use curve25519_dalek::{
     digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
@@ -228,12 +227,11 @@ impl ToPublicKey for VerificationKey {
             oid: ObjectIdentifier::new("1.3.101.112"), // RFC 8410
             parameters: None,
         };
-
-        let spki = SubjectPublicKeyInfo {
+        Ok(SubjectPublicKeyInfo {
             algorithm: alg_info,
             subject_public_key: &self.A_bytes.0[..],
-        };
-        PublicKeyDocument::try_from(spki).map_err(|_| pkcs8::Error::Crypto)
+        }
+        .into())
     }
 }
 
