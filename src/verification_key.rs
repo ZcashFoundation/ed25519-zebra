@@ -8,10 +8,14 @@ use curve25519_dalek::{
 use sha2::Sha512;
 use zeroize::DefaultIsZeroes;
 
-#[cfg(any(feature = "pem", feature = "std"))]
-use pkcs8::{AlgorithmIdentifier, FromPublicKey, ObjectIdentifier, PublicKeyDocument, SubjectPublicKeyInfo, ToPublicKey};
-
-use crate::{Error, Signature};
+pub use ed25519::{
+    signature::{Signer, Verifier},
+    Signature,
+};
+use pkcs8::{Document, ObjectIdentifier,};
+use pkcs8::der::asn1::BitStringRef;
+use pkcs8::spki::{AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef};
+use crate::Error;
 
 #[cfg(feature = "pem")]
 use {crate::pem, alloc::string::String, core::str::FromStr};
@@ -43,7 +47,7 @@ pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
 impl VerificationKeyBytes {
     /// Parse [`VerificationKeyBytes`] from ASN.1 DER
     pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
-        bytes.try_into().map_err(|_| pkcs8::Error::Crypto)
+        bytes.try_into().map_err(|_| pkcs8::Error::ParametersMalformed)
     }
 
     #[cfg(feature = "pem")]
@@ -75,7 +79,7 @@ impl AsRef<[u8]> for VerificationKeyBytes {
 
 impl TryFrom<&[u8]> for VerificationKeyBytes {
     type Error = Error;
-    fn try_from(slice: &[u8]) -> Result<VerificationKeyBytes, Error> {
+    fn try_from(slice: &[u8]) -> Result<VerificationKeyBytes, Self::Error> {
         if slice.len() == 32 {
             let mut bytes = [0u8; 32];
             bytes[..].copy_from_slice(slice);
@@ -98,27 +102,27 @@ impl From<VerificationKeyBytes> for [u8; 32] {
     }
 }
 
-impl<'a> TryFrom<SubjectPublicKeyInfo<'a>> for VerificationKeyBytes {
+impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
     type Error = Error;
 
-    fn try_from(spki: SubjectPublicKeyInfo) -> Result<VerificationKeyBytes, Error> {
-        Ok(VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfo doesn't return 32 bytes")))
+    fn try_from(spki: SubjectPublicKeyInfoRef) -> Result<VerificationKeyBytes, Error> {
+        Ok(VerificationKeyBytes::try_from(spki.subject_public_key.as_bytes().unwrap()).unwrap())
     }
 }
 
 #[cfg(feature = "pem")]
-impl TryFrom<PublicKeyDocument> for VerificationKeyBytes {
-    fn try_from(doc: PublicKeyDocument) -> Result<VerificationKeyBytes, Error> {
+impl TryFrom<Document> for VerificationKeyBytes {
+    fn try_from(doc: Document) -> Result<VerificationKeyBytes, Self::Error> {
         let spki = doc.unwrap();
-        VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfo doesn't return 32 bytes"))
+        VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfoRef doesn't return 32 bytes"))
     }
 }
 
 #[cfg(feature = "pem")]
-impl From<VerificationKeyBytes> for PublicKeyDocument {
-    fn from(bytes: VerificationKeyBytes) -> Result<PublicKeyDocument, Error> {
-        let spki = SubjectPublicKeyInfo::try_from(bytes.0).unwrap();
-        PublicKeyDocument::try_from(spki)
+impl From<VerificationKeyBytes> for Document {
+    fn from(bytes: VerificationKeyBytes) -> Result<Document, Self::Error> {
+        let spki = SubjectPublicKeyInfoRef::try_from(bytes.0).unwrap();
+        Document::try_from(spki)
     }
 }
 
@@ -221,23 +225,33 @@ impl TryFrom<[u8; 32]> for VerificationKey {
     }
 }
 
-impl ToPublicKey for VerificationKey {
-    fn to_public_key_der(&self) -> pkcs8::Result<PublicKeyDocument> {
-        let alg_info = AlgorithmIdentifier {
-            oid: ObjectIdentifier::new("1.3.101.112"), // RFC 8410
+impl EncodePublicKey for VerificationKey {
+    fn to_public_key_der(&self) -> pkcs8::spki::Result<Document> {
+        let alg_info = AlgorithmIdentifierRef {
+            oid: ObjectIdentifier::new_unwrap("1.3.101.112"), // RFC 8410
             parameters: None,
         };
-        Ok(SubjectPublicKeyInfo {
+        SubjectPublicKeyInfoRef {
             algorithm: alg_info,
-            subject_public_key: &self.A_bytes.0[..],
+            subject_public_key: BitStringRef::from_bytes(&self.A_bytes.0[..])?,
         }
-        .into())
+        .try_into()
     }
 }
 
-impl FromPublicKey for VerificationKey {
-    fn from_spki(spki: SubjectPublicKeyInfo<'_>) -> pkcs8::Result<Self> {
-        VerificationKey::try_from(spki.subject_public_key).map_err(|_| pkcs8::Error::Crypto)
+impl DecodePublicKey for VerificationKey {
+    fn from_public_key_der(bytes: &[u8]) -> Result<Self, pkcs8::spki::Error> {
+        Ok(Self::try_from(SubjectPublicKeyInfoRef::try_from(bytes).unwrap().subject_public_key.as_bytes().unwrap()).unwrap())
+    }
+}
+
+impl Verifier<Signature> for VerificationKey {
+    fn verify(
+        &self,
+        message: &[u8],
+        signature: &Signature,
+    ) -> Result<(), ed25519::signature::Error> {
+        self.verify(signature, message).map_err(|_| ed25519::signature::Error::new())
     }
 }
 
@@ -266,7 +280,7 @@ impl VerificationKey {
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         let k = Scalar::from_hash(
             Sha512::default()
-                .chain(&signature.R_bytes[..])
+                .chain(&signature.r_bytes()[..])
                 .chain(&self.A_bytes.0[..])
                 .chain(msg),
         );
@@ -278,10 +292,10 @@ impl VerificationKey {
     #[allow(non_snake_case)]
     pub(crate) fn verify_prehashed(&self, signature: &Signature, k: Scalar) -> Result<(), Error> {
         // `s_bytes` MUST represent an integer less than the prime `l`.
-        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(signature.s_bytes))
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
             .ok_or(Error::InvalidSignature)?;
         // `R_bytes` MUST be an encoding of a point on the twisted Edwards form of Curve25519.
-        let R = CompressedEdwardsY(signature.R_bytes)
+        let R = CompressedEdwardsY(*signature.r_bytes())
             .decompress()
             .ok_or(Error::InvalidSignature)?;
         // We checked the encoding of A_bytes when constructing `self`.

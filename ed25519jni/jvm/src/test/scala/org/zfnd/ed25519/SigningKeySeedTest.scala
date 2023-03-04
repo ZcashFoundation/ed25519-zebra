@@ -3,10 +3,11 @@ package org.zfnd.ed25519
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.Arrays
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import scala.collection.mutable.HashSet
 
-class SigningKeySeedTest extends FlatSpec with MustMatchers {
+class SigningKeySeedTest extends AnyFlatSpec with Matchers {
   it must "wrap SigningKeySeed (RFC 8410 - DER)" in {
     val sksValue = BigInt("D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842", 16)
     val sks = SigningKeySeed.fromBytesOrThrow(sksValue.toByteArray.drop(1))

@@ -56,7 +56,8 @@ impl TestCase {
     }
 
     fn check_zip215(&self) -> Result<(), Report> {
-        use ed25519_zebra_zip215::{Signature, VerificationKey};
+        use ed25519::Signature;
+        use ed25519_zebra_zip215::VerificationKey;
         let sig = Signature::from(self.sig_bytes);
         VerificationKey::try_from(self.vk_bytes).and_then(|vk| vk.verify(&sig, b"Zcash"))?;
         Ok(())

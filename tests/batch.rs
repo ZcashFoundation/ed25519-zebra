@@ -4,7 +4,7 @@ use ed25519_zebra::*;
 
 #[test]
 fn batch_verify() {
-    let mut batch = batch::Verifier::new();
+    let mut batch = batch::BatchVerifier::new();
     for _ in 0..32 {
         let sk = SigningKey::new(thread_rng());
         let pk_bytes = VerificationKeyBytes::from(&sk);
@@ -18,7 +18,7 @@ fn batch_verify() {
 #[test]
 fn batch_verify_with_one_bad_sig() {
     let bad_index = 10;
-    let mut batch = batch::Verifier::new();
+    let mut batch = batch::BatchVerifier::new();
     let mut items = Vec::new();
     for i in 0..32 {
         let sk = SigningKey::new(thread_rng());

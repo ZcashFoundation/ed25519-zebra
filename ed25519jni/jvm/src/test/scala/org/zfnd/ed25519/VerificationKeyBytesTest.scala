@@ -3,22 +3,25 @@ package org.zfnd.ed25519
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.Arrays
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import scala.collection.mutable.HashSet
 
-class VerificationKeyBytesTest extends FlatSpec with MustMatchers {
+class VerificationKeyBytesTest extends AnyFlatSpec with Matchers {
   private val RANDOM = new SecureRandom()
 
   it must "properly compare VerificationKeyBytes objects" in {
     val vkb1 = new Array[Byte](VerificationKeyBytes.BYTE_LENGTH)
-    do {
+    while ({
       RANDOM.nextBytes(vkb1)
-    } while(!VerificationKeyBytes.bytesAreValid(vkb1))
+      !VerificationKeyBytes.bytesAreValid(vkb1)
+    }) {}
 
     val vkb2 = new Array[Byte](VerificationKeyBytes.BYTE_LENGTH)
-    do {
+    while ({
       RANDOM.nextBytes(vkb2)
-    } while(!VerificationKeyBytes.bytesAreValid(vkb2))
+      !VerificationKeyBytes.bytesAreValid(vkb2)
+    }) {}
 
     val vkbObj1 = new VerificationKeyBytes(vkb1)
     val vkbObj2 = new VerificationKeyBytes(vkb1)
@@ -29,9 +32,10 @@ class VerificationKeyBytesTest extends FlatSpec with MustMatchers {
 
   it must "properly handle VerificationKeyBytes in hashed data structures" in {
     val vkb = new Array[Byte](VerificationKeyBytes.BYTE_LENGTH)
-    do {
+    while ({
       RANDOM.nextBytes(vkb)
-    } while(!VerificationKeyBytes.bytesAreValid(vkb))
+      !VerificationKeyBytes.bytesAreValid(vkb)
+    }) {}
 
     val vkbObj1 = new VerificationKeyBytes(vkb)
     val vkbObj2 = new VerificationKeyBytes(vkb)

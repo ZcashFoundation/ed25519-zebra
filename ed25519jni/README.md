@@ -24,8 +24,8 @@ It's possible to generate a JAR that can be loaded into a project via
 along with the Java JNI interface file. There are two exta steps to perform
 after the mandatory compilation steps.
 
-- Run `jni_jar_prereq.sh` from the `ed25519/scripts` subdirectory. This performs
-  some JAR setup steps.
+- Run `jni_jar_prereq.sh` from the `ed25519jni/scripts` subdirectory. This performs
+  some JAR setup steps. (Use the `-d` flag if working with debug builds.)
 - Run `sbt clean publishLocal` from the `ed25519jni/jvm` subdirectory. This
   generates the final `ed25519jni.jar` file.
 
@@ -38,7 +38,8 @@ needed. If necessary, include the JNI Java files too.
 
 ## Testing
 Run `sbt test` from the `ed25519jni/jvm` directory. Note that, in order to run
-the tests, the [JAR compilation method](#jar) must be executed first.
+the tests, the first step from the [JAR compilation method](#jar) must be
+executed first.
 
 ## Capabilities
 Among other things, the JNI code can perform the following actions.

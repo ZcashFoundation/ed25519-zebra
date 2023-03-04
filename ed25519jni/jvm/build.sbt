@@ -4,9 +4,9 @@ name := "ed25519jni"
 
 version := "0.0.5-JNI-DEV"
 
-scalaVersion := "2.12.10"
+scalaVersion := "3.1.3"
 
-scalacOptions ++= Seq("-Xmax-classfile-name", "140")
+//scalacOptions ++= Seq("-Xmax-classfile-name", "140")
 
 autoScalaLibrary := false // exclude scala-library from dependencies
 

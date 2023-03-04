@@ -35,7 +35,7 @@
 //! # Example
 //! ```
 //! # use ed25519_zebra::*;
-//! let mut batch = batch::Verifier::new();
+//! let mut batch = batch::BatchVerifier::new();
 //! for _ in 0..32 {
 //!     let sk = SigningKey::new(rand::thread_rng());
 //!     let vk_bytes = VerificationKeyBytes::from(&sk);
@@ -61,7 +61,8 @@ use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
 use sha2::Sha512;
 
-use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
+use crate::{Error, VerificationKey, VerificationKeyBytes};
+use ed25519::Signature;
 
 // Shim to generate a u128 without importing `rand`.
 fn gen_u128<R: RngCore + CryptoRng>(mut rng: R) -> u128 {
@@ -88,7 +89,7 @@ impl<'msg, M: AsRef<[u8]> + ?Sized> From<(VerificationKeyBytes, Signature, &'msg
         // Compute k now to avoid dependency on the msg lifetime.
         let k = Scalar::from_hash(
             Sha512::default()
-                .chain(&sig.R_bytes[..])
+                .chain(&sig.r_bytes()[..])
                 .chain(&vk_bytes.0[..])
                 .chain(msg),
         );
@@ -112,7 +113,7 @@ impl Item {
 
 /// A batch verification context.
 #[derive(Default)]
-pub struct Verifier {
+pub struct BatchVerifier {
     /// Signature data queued for verification.
     signatures: HashMap<VerificationKeyBytes, Vec<(Scalar, Signature)>>,
     /// Caching this count avoids a hash traversal to figure out
@@ -120,10 +121,10 @@ pub struct Verifier {
     batch_size: usize,
 }
 
-impl Verifier {
+impl BatchVerifier {
     /// Construct a new batch verifier.
-    pub fn new() -> Verifier {
-        Verifier::default()
+    pub fn new() -> BatchVerifier {
+        BatchVerifier::default()
     }
 
     /// Queue a (key, signature, message) tuple for verification.
@@ -183,10 +184,10 @@ impl Verifier {
             let mut A_coeff = Scalar::ZERO;
 
             for (k, sig) in sigs.iter() {
-                let R = CompressedEdwardsY(sig.R_bytes)
+                let R = CompressedEdwardsY(*sig.r_bytes())
                     .decompress()
                     .ok_or(Error::InvalidSignature)?;
-                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(sig.s_bytes))
+                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*sig.s_bytes()))
                     .ok_or(Error::InvalidSignature)?;
                 let z = Scalar::from(gen_u128(&mut rng));
                 B_coeff -= z * s;

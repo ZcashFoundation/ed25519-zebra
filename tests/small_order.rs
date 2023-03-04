@@ -89,14 +89,16 @@ fn conformance() -> Result<(), Report> {
 #[test]
 fn individual_matches_batch_verification() -> Result<(), Report> {
     use core::convert::TryFrom;
-    use ed25519_zebra::{batch, Signature, VerificationKey, VerificationKeyBytes};
+    use ed25519::Signature;
+    use ed25519_zebra::{batch, VerificationKey, VerificationKeyBytes};
+
     for case in SMALL_ORDER_SIGS.iter() {
         let msg = b"Zcash";
         let sig = Signature::from(case.sig_bytes);
         let vkb = VerificationKeyBytes::from(case.vk_bytes);
         let individual_verification =
             VerificationKey::try_from(vkb).and_then(|vk| vk.verify(&sig, msg));
-        let mut bv = batch::Verifier::new();
+        let mut bv = batch::BatchVerifier::new();
         bv.queue((vkb, sig, msg));
         let batch_verification = bv.verify(rand::thread_rng());
         assert_eq!(individual_verification.is_ok(), batch_verification.is_ok());

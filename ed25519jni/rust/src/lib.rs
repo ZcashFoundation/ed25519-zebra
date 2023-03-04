@@ -1,6 +1,8 @@
-use ed25519_zebra::{Signature, SigningKey, VerificationKey, VerificationKeyBytes,};
+use ed25519::Signature;
+use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes,};
 use jni::{objects::{JClass, JString}, sys::{jboolean, jbyteArray, jstring}, JNIEnv,};
-use pkcs8::{FromPrivateKey, FromPublicKey, ToPrivateKey, ToPublicKey,};
+use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey,};
+use pkcs8::der::pem::LineEnding;
 use std::{convert::TryFrom, panic, ptr,};
 
 mod utils;
@@ -50,7 +52,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedE
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        Ok(env.byte_array_from_slice(sk.to_pkcs8_der().unwrap().as_ref()).unwrap())
+        Ok(env.byte_array_from_slice(sk.to_pkcs8_der().unwrap().as_bytes()).unwrap())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -67,7 +69,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedP
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        let output = env.new_string(&*sk.to_pkcs8_pem().unwrap()).expect("Couldn't create SKS PEM string!");
+        let output = env.new_string(&*sk.to_pkcs8_pem(LineEnding::default()).unwrap()).expect("Couldn't create SKS PEM string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
@@ -136,7 +138,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
         vkb.copy_from_slice(&env.convert_byte_array(vk_bytes).unwrap());
         let vk = VerificationKey::try_from(VerificationKeyBytes::from(vkb)).unwrap();
 
-        let output = env.new_string(vk.to_public_key_pem().unwrap()).expect("Couldn't create VKB PEM string!");
+        let output = env.new_string(vk.to_public_key_pem(LineEnding::default()).unwrap()).expect("Couldn't create VKB PEM string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())

@@ -1,5 +1,5 @@
 use hex;
-use pkcs8::{FromPrivateKey, FromPublicKey, ToPrivateKey, ToPublicKey};
+use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePublicKey, EncodePrivateKey,};
 use std::convert::TryFrom;
 use ed25519_zebra::*;
 
@@ -21,9 +21,10 @@ fn decode_doc_to_signing_key() {
     hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
 
     let sk1 = SigningKey::try_from(sk_array).unwrap();
-    let pkd = sk1.to_pkcs8_der().unwrap();
+    let sd = sk1.to_pkcs8_der().unwrap();
+    let sd_bytes = sd.as_bytes();
 
-    let sk2 = SigningKey::from_pkcs8_doc(&pkd).unwrap();
+    let sk2 = SigningKey::from_pkcs8_der(&sd_bytes).unwrap();
     assert_eq!(sk_array, sk2.as_ref());
 }
 
@@ -37,12 +38,12 @@ fn decode_pem_to_signing_key() {
 
 #[test]
 fn decode_der_to_verification_key() {
-    let der_bytes_string = "302a300506032b65700321004d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d";
+    let der_bytes_string = "302a300506032b657003210019bf44096984cdfe8541bac167dc3b96c85086aa30b6b6cb0c5c38ad703166e1";
     let mut der_bytes = [0u8; 44];
     hex::decode_to_slice(der_bytes_string, &mut der_bytes as &mut [u8]).ok();
     let vk = VerificationKey::from_public_key_der(der_bytes.as_ref()).unwrap();
 
-    let vk_bytes_string = "4d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d";
+    let vk_bytes_string = "19bf44096984cdfe8541bac167dc3b96c85086aa30b6b6cb0c5c38ad703166e1";
     assert_eq!(hex::decode(vk_bytes_string).unwrap(), vk.as_ref());
 }
 
@@ -55,8 +56,9 @@ fn decode_doc_to_verification_key() {
     let vk1 = VerificationKey::try_from(vk_array).unwrap();
     let pkd = vk1.to_public_key_der().unwrap();
 
-    let vk2 = VerificationKey::from_public_key_doc(&pkd).unwrap();
-    assert_eq!(vk_array, vk2.as_ref());
+    let vk_pem_bytes_string = "302a300506032b65700321004d29167f3f1912a6f7adfa293a051a15c05ec67b8f17267b1c5550dce853bd0d";
+    let vk2 = pkd.as_bytes();
+    assert_eq!(hex::decode(vk_pem_bytes_string).unwrap(), vk2.as_ref());
 }
 
 #[test]
