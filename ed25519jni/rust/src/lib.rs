@@ -52,7 +52,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedE
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        Ok(env.byte_array_from_slice(sk.to_pkcs8_der().unwrap().as_bytes()).unwrap())
+        Ok(env.byte_array_from_slice(sk.to_pkcs8_der_v1().unwrap().as_bytes()).unwrap())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())
 }
@@ -69,7 +69,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedP
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        let output = env.new_string(&*sk.to_pkcs8_pem(LineEnding::default()).unwrap()).expect("Couldn't create SKS PEM string!");
+        let output = env.new_string(&*sk.to_pkcs8_pem_v1(LineEnding::default()).unwrap()).expect("Couldn't create SKS PEM string!");
         Ok(output.into_inner())
     });
     unwrap_exc_or(&env, res, ptr::null_mut())

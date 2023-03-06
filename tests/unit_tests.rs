@@ -2,10 +2,7 @@ use core::convert::TryFrom;
 
 use rand::thread_rng;
 
-pub use ed25519::{
-    signature::{Signer, Verifier},
-    ComponentBytes, Error as Ed25519Error, KeypairBytes, PublicKeyBytes, Signature,
-};
+use ed25519::Signature;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
 
 #[test]
@@ -36,12 +33,10 @@ fn parsing() {
     let sk3: SigningKey = bincode::deserialize(sk.as_ref()).unwrap();
     let pk3: VerificationKey = bincode::deserialize(pk.as_ref()).unwrap();
     let pkb3: VerificationKeyBytes = bincode::deserialize(pkb.as_ref()).unwrap();
-    // let sig3: Signature = bincode::deserialize(<[u8; 64]>::from(sig).as_ref()).unwrap();
 
     assert_eq!(&sk_array[..], sk3.as_ref());
     assert_eq!(&pk_array[..], pk3.as_ref());
     assert_eq!(&pkb_array[..], pkb3.as_ref());
-    // assert_eq!(&sig_array[..], <[u8; 64]>::from(sig3).as_ref());
 }
 
 #[test]

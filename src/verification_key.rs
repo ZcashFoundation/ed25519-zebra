@@ -17,9 +17,6 @@ use pkcs8::der::asn1::BitStringRef;
 use pkcs8::spki::{AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef};
 use crate::Error;
 
-#[cfg(feature = "pem")]
-use {crate::pem, alloc::string::String, core::str::FromStr};
-
 /// A refinement type for `[u8; 32]` indicating that the bytes represent an
 /// encoding of an Ed25519 verification key.
 ///
@@ -43,25 +40,6 @@ use {crate::pem, alloc::string::String, core::str::FromStr};
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
-
-impl VerificationKeyBytes {
-    /// Parse [`VerificationKeyBytes`] from ASN.1 DER
-    pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
-        bytes.try_into().map_err(|_| pkcs8::Error::ParametersMalformed)
-    }
-
-    #[cfg(feature = "pem")]
-    pub fn from_pem(s: &str) -> pkcs8::Result<Self> {
-        let der_bytes = pem::decode(s, pem::PUBLIC_KEY_BOUNDARY)?;
-        Self::from_der(&*der_bytes)
-    }
-
-    /// Serialize [`VerificationKeyBytes`] as PEM-encoded PKCS#8 string.
-    #[cfg(feature = "pem")]
-    pub fn to_pem(&self) -> String {
-        pem::encode(&self.0, pem::PUBLIC_KEY_BOUNDARY)
-    }
-}
 
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
@@ -107,31 +85,6 @@ impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
 
     fn try_from(spki: SubjectPublicKeyInfoRef) -> Result<VerificationKeyBytes, Error> {
         Ok(VerificationKeyBytes::try_from(spki.subject_public_key.as_bytes().unwrap()).unwrap())
-    }
-}
-
-#[cfg(feature = "pem")]
-impl TryFrom<Document> for VerificationKeyBytes {
-    fn try_from(doc: Document) -> Result<VerificationKeyBytes, Self::Error> {
-        let spki = doc.unwrap();
-        VerificationKeyBytes(spki.subject_public_key.try_into().expect("Ed25519 SubjectPublicKeyInfoRef doesn't return 32 bytes"))
-    }
-}
-
-#[cfg(feature = "pem")]
-impl From<VerificationKeyBytes> for Document {
-    fn from(bytes: VerificationKeyBytes) -> Result<Document, Self::Error> {
-        let spki = SubjectPublicKeyInfoRef::try_from(bytes.0).unwrap();
-        Document::try_from(spki)
-    }
-}
-
-#[cfg(feature = "pem")]
-impl FromStr for VerificationKeyBytes {
-    type Err = Error;
-
-    fn from_str(s: &str) -> pkcs8::Result<Self> {
-        Self::from_pem(s)
     }
 }
 
@@ -226,6 +179,7 @@ impl TryFrom<[u8; 32]> for VerificationKey {
 }
 
 impl EncodePublicKey for VerificationKey {
+    /// Serialize [`VerificationKey`] to an ASN.1 DER-encoded document.
     fn to_public_key_der(&self) -> pkcs8::spki::Result<Document> {
         let alg_info = AlgorithmIdentifierRef {
             oid: ObjectIdentifier::new_unwrap("1.3.101.112"), // RFC 8410
@@ -240,12 +194,16 @@ impl EncodePublicKey for VerificationKey {
 }
 
 impl DecodePublicKey for VerificationKey {
+    /// Deserialize [`VerificationKey`] from ASN.1 DER bytes (32 bytes).
     fn from_public_key_der(bytes: &[u8]) -> Result<Self, pkcs8::spki::Error> {
-        Ok(Self::try_from(SubjectPublicKeyInfoRef::try_from(bytes).unwrap().subject_public_key.as_bytes().unwrap()).unwrap())
+        let spki = SubjectPublicKeyInfoRef::try_from(bytes).unwrap();
+        let pk_bytes = spki.subject_public_key.as_bytes().unwrap();
+        Ok(Self::try_from(pk_bytes).unwrap())
     }
 }
 
 impl Verifier<Signature> for VerificationKey {
+    /// Verify a [`Signature`] object against a given [`VerificationKey`].
     fn verify(
         &self,
         message: &[u8],
