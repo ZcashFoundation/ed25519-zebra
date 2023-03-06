@@ -5,6 +5,8 @@ specific `ed25519-zebra` calls and provides a minor analogue for some Rust
 classes, allowing for things like basic sanity checks of certain values.  Tests
 written in Scala have also been included.
 
+Note that Scala 3 is required to build and test the JNI code.
+
 ## Compilation / Library Usage
 To build the JNI code, there are several steps. The exact path forward depends
 on the user's preferred deployment method. No matter what, the following steps
@@ -30,11 +32,11 @@ after the mandatory compilation steps.
   generates the final `ed25519jni.jar` file.
 
 ### Direct library usage
-(NOTE: Future work will better accommodate this option. For now, users will have
-to develop their own solutions.)
-
 Use a preferred method to load the Rust core and JNI libraries directly as
 needed. If necessary, include the JNI Java files too.
+
+Note that the code is designed to support only the aforementioned JAR method. Local
+changes may be required to support other deployment methods.
 
 ## Testing
 Run `sbt test` from the `ed25519jni/jvm` directory. Note that, in order to run
@@ -47,5 +49,5 @@ Among other things, the JNI code can perform the following actions.
 * Generate a random 32 byte signing key seed.
 * Generate a 32 byte verification key from a signing key seed.
 * Sign arbitrary data with a signing key seed.
-* Verify a signature for arbitrary data with verification key bytes (32 bytes).
+* Verify a signature for arbitrary data with verification key bytes.
 * Generate DER bytes and PEM strings for signing key seeds and verification key bytes, and read back the DER bytes and PEM strings into signing key seeds and verification key bytes.
