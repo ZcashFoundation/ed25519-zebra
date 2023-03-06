@@ -60,7 +60,7 @@ public class SigningKeySeed {
     }
 
     /**
-     * Generate a SigningKeySeed object from PEM (RFC 8410) bytes.
+     * Generate a SigningKeySeed object from PEM (RFC 5958) bytes.
      *
      * @param pemString the encoded PEM string
      * @return a new SigningKeySeed object
@@ -79,7 +79,7 @@ public class SigningKeySeed {
     }
 
     /**
-     * Get the encoded PEM (RFC 8410) bytes for signing key seed bytes.
+     * Get the encoded PEM (RFC 5958) bytes for signing key seed bytes.
      *
      * @return the encoded PEM bytes
      */
