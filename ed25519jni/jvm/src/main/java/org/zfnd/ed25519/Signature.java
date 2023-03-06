@@ -7,10 +7,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Java wrapper class for signatures that performs some sanity checking.
- */
+ **/
 public class Signature {
+    /**
+     * Length of signature components (R &amp; s).
+     **/
     public static final int COMPONENT_LENGTH = 32;
+
+    /**
+     * Length of a signature.
+     **/
     public static final int SIGNATURE_LENGTH = 2 * COMPONENT_LENGTH;
+
     private static final Logger logger = LoggerFactory.getLogger(Signature.class);
 
     private byte[] rBytes;
@@ -35,26 +43,47 @@ public class Signature {
     }
 
     /**
+     * Get the raw signature bytes.
+     *
      * @return a copy of the complete signature
      */
     public byte[] getSignatureBytesCopy() {
         return completeSignature.clone();
     }
 
+    /**
+     * Get the raw signature bytes.
+     *
+     * @return a copy of the complete signature
+     */
     byte[] getSignatureBytes() {
         return completeSignature;
     }
 
+    /**
+     * Get the signature algorithm name.
+     *
+     * @return the signature algorithm name
+     */
     public String getAlgorithm() {
         return "Ed25519";
     }
 
-    // Identity function.
+    /**
+     * Get the encoded signature bytes.
+     *
+     * @return the complete signature
+     */
     public byte[] getEncoded() {
         return getSignatureBytes();
     }
 
-    // Identity function. Don't verify the bytes in any way.
+    /**
+     * Get a Signature object from an encoded signature.
+     *
+     * @param encodedBytes untrusted, unvalidated bytes that may be an encoding of a verification key
+     * @return the Signature object
+     */
     public static Signature getFromEncoded(byte[] encodedBytes) {
         if (encodedBytes.length != SIGNATURE_LENGTH) {
             throw new IllegalArgumentException("Ed25519 signature must be " + SIGNATURE_LENGTH + " bytes large.");

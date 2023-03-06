@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
  * Java wrapper class for verification key bytes that performs some sanity checking.
  */
 public class VerificationKeyBytes {
+    /**
+     * Length of verification keys.
+     **/
     public static final int BYTE_LENGTH = 32;
     private static final Logger logger = LoggerFactory.getLogger(VerificationKeyBytes.class);
 
@@ -26,7 +29,9 @@ public class VerificationKeyBytes {
     }
 
     /**
-     * @return a copy of the wrapped bytes
+     * Get a copy of the actual verification key bytes.
+     *
+     * @return a byte array with a copy of the wrapped bytes
      */
     public byte[] getVerificationKeyBytesCopy() {
         return vkb.clone();
@@ -104,10 +109,20 @@ public class VerificationKeyBytes {
             .orElseThrow(() -> new IllegalArgumentException("Expected " + BYTE_LENGTH + " bytes that encode a verification key!"));
     }
 
+    /**
+     * Get the verification key algorithm name.
+     *
+     * @return the verification key algorithm name
+     */
     public static String getAlgorithm() {
         return "EdDSA";
     }
 
+    /**
+     * Get the verification key algorithm format.
+     *
+     * @return the verification key algorithm format
+     */
     public static String getFormat() {
         return "X.509";
     }

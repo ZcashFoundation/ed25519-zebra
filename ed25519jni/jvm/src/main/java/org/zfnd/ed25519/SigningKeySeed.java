@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
  * Java wrapper class for signing key seeds that performs some sanity checking.
  */
 public class SigningKeySeed {
+    /**
+     * Length of signing key seeds.
+     **/
     public static final int BYTE_LENGTH = 32;
     private static final Logger logger = LoggerFactory.getLogger(SigningKeySeed.class);
 
@@ -34,7 +37,9 @@ public class SigningKeySeed {
     }
 
     /**
-     * @return a copy of the wrapped bytes
+     * Get a copy of the actual signing key seed bytes.
+     *
+     * @return a byte array copy of the wrapped bytes
      */
     public byte[] getSigningKeySeedCopy() {
         return seed.clone();
@@ -82,10 +87,20 @@ public class SigningKeySeed {
         return Ed25519Interface.getSigningKeySeedPEM(this);
     }
 
+    /**
+     * Get the signing key algorithm name.
+     *
+     * @return the signing key algorithm name
+     */
     public static String getAlgorithm() {
         return "EdDSA";
     }
 
+    /**
+     * Get the signing key format.
+     *
+     * @return the signing key algorithm format
+     */
     public static String getFormat() {
         return "PKCS#8";
     }

@@ -6,6 +6,18 @@ import org.scijava.nativelib.NativeLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Interface class offering Java users access to certain ed25519-zebra functionality.
+ * Uses include but are not necessarily limited to:
+ *  - Generating a signing key seed (essentially a private key).
+ *  - Obtaining a DER-encoded (v1, per RFC 5958) signing key seed byte array.
+ *  - Obtaining a PEM-encoded (v1, per RFC 5958) signing key seed string.
+ *  - Getting verification key bytes (basically a public key) from a signing key seed.
+ *  - Obtaining a DER-encoded (v1, per RFC 5958) verification key byte structure.
+ *  - Obtaining a PEM-encoded (v1, per RFC 5958) verification key byte structure.
+ *  - Signing data with a signing key seed.
+ *  - Verifying a signature with verification key bytes.
+ */
 public class Ed25519Interface {
   private static final Logger logger;
   private static final boolean enabled;
@@ -22,6 +34,11 @@ public class Ed25519Interface {
     }
     enabled = isEnabled;
   }
+
+  /**
+   * Default constuctor.
+   */
+  public Ed25519Interface() {  }
 
   /**
    * Helper method to determine whether the Ed25519 Rust backend is loaded and
@@ -65,7 +82,7 @@ public class Ed25519Interface {
    * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
    *
    * @param sks the signing key seed bytes
-   * @return the encoded DER bytes (48 bytes)
+   * @return the encoded DER bytes
    */
   public static native byte[] getSigningKeySeedEncoded(byte[] sks);
 
@@ -73,7 +90,7 @@ public class Ed25519Interface {
    * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
    *
    * @param sks the signing key seed
-   * @return the encoded DER bytes (48 bytes)
+   * @return the encoded DER bytes
    */
   public static byte[] getSigningKeySeedEncoded(SigningKeySeed sks) {
     return getSigningKeySeedEncoded(sks.getSigningKeySeedCopy());
