@@ -7,6 +7,7 @@ use curve25519_dalek::{
     traits::IsIdentity,
 };
 use sha2::Sha512;
+use zeroize::DefaultIsZeroes;
 
 use crate::{Error, Signature};
 
@@ -111,6 +112,20 @@ impl AsRef<[u8]> for VerificationKey {
         &self.A_bytes.0[..]
     }
 }
+
+impl Default for VerificationKey {
+    fn default() -> VerificationKey {
+        let identity: EdwardsPoint = Default::default();
+        let identity_bytes = identity.compress().to_bytes();
+
+        VerificationKey {
+            A_bytes: VerificationKeyBytes::from(identity_bytes),
+            minus_A: -identity,
+        }
+    }
+}
+
+impl DefaultIsZeroes for VerificationKey {}
 
 impl From<VerificationKey> for [u8; 32] {
     fn from(vk: VerificationKey) -> [u8; 32] {
