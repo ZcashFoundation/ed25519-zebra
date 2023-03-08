@@ -23,9 +23,6 @@ pub struct SigningKey {
 impl core::fmt::Debug for SigningKey {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         fmt.debug_struct("SigningKey")
-            .field("seed", &hex::encode(&self.seed))
-            .field("s", &self.s)
-            .field("prefix", &hex::encode(&self.prefix))
             .field("vk", &self.vk)
             .finish()
     }
