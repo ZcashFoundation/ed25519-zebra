@@ -85,4 +85,4 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
 [zcash_protocol_jssig]: https://zips.z.cash/protocol/protocol.pdf#concretejssig
 [RFC8032]: https://tools.ietf.org/html/rfc8032
 [zebra]: https://github.com/ZcashFoundation/zebra
-[ZIP215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
+[ZIP215]: https://zips.z.cash/zip-0215
