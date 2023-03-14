@@ -46,7 +46,7 @@
 //! assert!(batch.verify(rand::thread_rng()).is_ok());
 //! ```
 //!
-//! [ZIP215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
+//! [ZIP215]: https://zips.z.cash/zip-0215
 
 use alloc::vec::Vec;
 use core::convert::TryFrom;
@@ -141,18 +141,11 @@ impl Verifier {
 
     /// Perform batch verification, returning `Ok(())` if all signatures were
     /// valid and `Err` otherwise.
-    ///
-    /// # Warning
-    ///
-    /// Ed25519 has different verification rules for batched and non-batched
-    /// verifications. This function does not have the same verification criteria
-    /// as individual verification, which may reject some signatures this method
-    /// accepts.
     #[allow(non_snake_case)]
     pub fn verify<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
         // The batch verification equation is
         //
-        // [-sum(z_i * s_i)]B + sum([z_i]R_i) + sum([z_i * k_i]A_i) = 0.
+        // 8*[-sum(z_i * s_i)]B + 8*sum([z_i]R_i) + 8*sum([z_i * k_i]A_i) = 0.
         //
         // where for each signature i,
         // - A_i is the verification key;

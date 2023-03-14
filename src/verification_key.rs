@@ -170,7 +170,7 @@ impl VerificationKey {
     ///   used.
     ///
     /// [ps]: https://zips.z.cash/protocol/protocol.pdf#concreteed25519
-    /// [ZIP215]: https://github.com/zcash/zips/blob/master/zip-0215.rst
+    /// [ZIP215]: https://zips.z.cash/zip-0215
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         let k = Scalar::from_hash(
             Sha512::default()
