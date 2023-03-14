@@ -3,13 +3,14 @@ use core::convert::TryFrom;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
+use zeroize::Zeroize;
 
 use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
 
 /// An Ed25519 signing key.
 ///
 /// This is also called a secret key by other implementations.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Zeroize)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
@@ -100,15 +101,6 @@ impl From<[u8; 32]> for SigningKey {
                 A_bytes: VerificationKeyBytes(A.compress().to_bytes()),
             },
         }
-    }
-}
-
-impl zeroize::Zeroize for SigningKey {
-    fn zeroize(&mut self) {
-        self.seed.zeroize();
-        self.s.zeroize();
-        self.prefix.zeroize();
-        self.vk.zeroize();
     }
 }
 
