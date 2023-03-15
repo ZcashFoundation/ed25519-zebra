@@ -15,7 +15,7 @@ features = ["nightly"]
 
 [dependencies]
 # "digest" is exempt from SemVer, so we should always use a specific version
-curve25519-dalek = { version = "=4.0.0-pre.5", default-features = false, features = ["alloc", "digest"] }
+curve25519-dalek = { version = "=4.0.0-rc.1", default-features = false, features = ["alloc", "digest"] }
 hashbrown = "0.12.0"
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
 rand_core = "0.6"
