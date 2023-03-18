@@ -12,9 +12,14 @@ pub use ed25519::{
     signature::{Signer, Verifier},
     Signature,
 };
+
+#[cfg(feature = "pkcs8")]
 use pkcs8::{Document, ObjectIdentifier,};
+#[cfg(feature = "pkcs8")]
 use pkcs8::der::asn1::BitStringRef;
+#[cfg(feature = "pkcs8")]
 use pkcs8::spki::{AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef};
+
 use crate::Error;
 
 /// A refinement type for `[u8; 32]` indicating that the bytes represent an
@@ -80,6 +85,7 @@ impl From<VerificationKeyBytes> for [u8; 32] {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
     type Error = Error;
 
@@ -178,6 +184,7 @@ impl TryFrom<[u8; 32]> for VerificationKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl EncodePublicKey for VerificationKey {
     /// Serialize [`VerificationKey`] to an ASN.1 DER-encoded document.
     fn to_public_key_der(&self) -> pkcs8::spki::Result<Document> {
@@ -193,6 +200,7 @@ impl EncodePublicKey for VerificationKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl DecodePublicKey for VerificationKey {
     /// Deserialize [`VerificationKey`] from ASN.1 DER bytes (32 bytes).
     fn from_public_key_der(bytes: &[u8]) -> Result<Self, pkcs8::spki::Error> {

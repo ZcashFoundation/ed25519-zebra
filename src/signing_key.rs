@@ -1,4 +1,6 @@
+#[cfg(feature = "pkcs8")]
 const OID: ObjectIdentifier = ObjectIdentifier::new_unwrap("1.3.101.112");  // RFC 8410
+#[cfg(feature = "pkcs8")]
 const ALGORITHM_ID: AlgorithmIdentifierRef = AlgorithmIdentifierRef {
     oid: OID,
     parameters: None,
@@ -16,29 +18,19 @@ pub use ed25519::{
     ComponentBytes, Error as Ed25519Error, KeypairBytes, PublicKeyBytes, Signature,
 };
 
+#[cfg(feature = "pkcs8")]
 use pkcs8::{der::SecretDocument};
-#[cfg(any(feature = "pem", feature = "std"))]
+#[cfg(feature = "pkcs8")]
 use pkcs8::{DecodePrivateKey, Document, DecodePublicKey, EncodePrivateKey, EncodePublicKey, ObjectIdentifier, PrivateKeyInfo, spki::AlgorithmIdentifierRef};
-
-#[cfg(any(feature = "pem"))]
-use pkcs8::der::pem::LineEnding;
-
-// TEMPORARY HACK: See below.
-// #[cfg(any(feature = "pem"))]
+#[cfg(all(feature = "pem", feature = "pkcs8"))]
+use der::pem::LineEnding;
+#[cfg(all(feature = "pem", feature = "pkcs8"))]
 use zeroize::Zeroizing;
 
-// TEMPORARY HACK: See below.
-// #[cfg(feature = "pem")]
+#[cfg(all(feature = "pem", feature = "pkcs8"))]
 use pkcs8::der::pem::PemLabel;
 
-// TEMPORARY HACK: See below.
-// #[cfg(feature = "pem")]
-use pkcs8::LineEnding;
-
 use crate::{VerificationKey, VerificationKeyBytes};
-
-#[cfg(feature = "pem")]
-use alloc::string::String;
 
 /// An Ed25519 signing key.
 ///
@@ -137,6 +129,7 @@ impl From<[u8; 32]> for SigningKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
     type Error = Error;
     fn try_from(pki: PrivateKeyInfo) -> Result<Self, Self::Error> {
@@ -148,12 +141,14 @@ impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl EncodePublicKey for SigningKey {
     /// Serialize the public key for a [`SigningKey`] to an ASN.1 DER-encoded document.
     fn to_public_key_der(&self) -> pkcs8::spki::Result<Document> {
         self.vk.to_public_key_der()
     }
 }
+
 impl Signer<Signature> for SigningKey {
     /// Generate a [`Signature`] using a given [`SigningKey`].
     fn try_sign(&self, message: &[u8]) -> Result<Signature, ed25519::signature::Error> {
@@ -161,7 +156,7 @@ impl Signer<Signature> for SigningKey {
     }
 }
 
-// #[cfg(feature = "pkcs8")]
+#[cfg(feature = "pkcs8")]
 impl TryFrom<KeypairBytes> for SigningKey {
     type Error = pkcs8::Error;
 
@@ -170,7 +165,7 @@ impl TryFrom<KeypairBytes> for SigningKey {
     }
 }
 
-// #[cfg(feature = "pkcs8")]
+#[cfg(feature = "pkcs8")]
 impl TryFrom<&KeypairBytes> for SigningKey {
     type Error = pkcs8::Error;
 
@@ -191,14 +186,12 @@ impl TryFrom<&KeypairBytes> for SigningKey {
     }
 }
 
-// #[cfg(feature = "pkcs8")]
 impl From<SigningKey> for KeypairBytes {
     fn from(signing_key: SigningKey) -> KeypairBytes {
         KeypairBytes::from(&signing_key)
     }
 }
 
-// #[cfg(feature = "pkcs8")]
 impl From<&SigningKey> for KeypairBytes {
     fn from(signing_key: &SigningKey) -> KeypairBytes {
         KeypairBytes {
@@ -208,6 +201,7 @@ impl From<&SigningKey> for KeypairBytes {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl EncodePrivateKey for SigningKey {
     /// Serialize [`SigningKey`] to an ASN.1 DER-encoded secret document. Note that this
     /// will generate a v2 (RFC 5958) DER encoding with a public key.
@@ -226,6 +220,7 @@ impl EncodePrivateKey for SigningKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl DecodePrivateKey for SigningKey {
     /// Create a [`SigningKey`] from an ASN.1 DER-encoded bytes. The bytes may include an
     /// accompanying public key, as defined in RFC 5958 (v1 and v2), but the call will
@@ -295,12 +290,14 @@ impl SigningKey {
     }
 
     /// Parse [`SigningKey`] from ASN.1 DER bytes.
+    #[cfg(feature = "pkcs8")]
     pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
         bytes.try_into().map_err(|_| pkcs8::Error::ParametersMalformed)
     }
 
     /// Serialize [`SigningKey`] to an ASN.1 DER-encoded secret document. Note that this
     /// will generate a v1 (RFC 5958) DER encoding without a public key.
+    #[cfg(feature = "pkcs8")]
     pub fn to_pkcs8_der_v1(&self) -> pkcs8::Result<SecretDocument> {
         // In RFC 8410, the octet string containing the private key is encapsulated by
         // another octet string. Just add octet string bytes to the key when building
@@ -316,8 +313,7 @@ impl SigningKey {
 
     /// Serialize [`SigningKey`] as a PEM-encoded PKCS#8 string. Note that this
     /// will generate a v1 (RFC 5958) PEM encoding without a public key.
-    // TEMPORARY HACK: Disable cfg until a solution for the JNI code compilation is found.
-//    #[cfg(feature = "pem")]
+    #[cfg(all(feature = "pem", feature = "pkcs8"))]
     pub fn to_pkcs8_pem_v1(&self, line_ending: LineEnding) -> Result<Zeroizing<String>, pkcs8::Error> {
         let doc = self.to_pkcs8_der_v1()?;
         Ok(doc.to_pem(PrivateKeyInfo::PEM_LABEL, line_ending)?)

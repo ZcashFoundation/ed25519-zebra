@@ -14,12 +14,12 @@ crossPaths := false // drop off Scala suffix from artifact names.
 
 libraryDependencies ++= Deps.ed25519jni
 
-unmanagedResourceDirectories in Compile += baseDirectory.value / "natives"
+Compile / unmanagedResourceDirectories += baseDirectory.value / "natives"
 
 publishArtifact := true
 
-javacOptions in (Compile,doc) ++= Seq(
+Compile / doc / javacOptions ++= Seq(
   "-windowtitle", "JNI bindings for ed25519-zebra"
 )
 
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")
+Test / testOptions += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "3")

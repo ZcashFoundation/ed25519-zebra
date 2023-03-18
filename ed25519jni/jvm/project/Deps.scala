@@ -3,7 +3,7 @@ import sbt._
 object Deps {
 
   object V {
-    val nativeLoaderV = "2.3.4"
+    val nativeLoaderV = "2.4.0"
     val scalactic = "3.2.15"
     val scalaTest = "3.2.15"
     val slf4j = "1.7.30"

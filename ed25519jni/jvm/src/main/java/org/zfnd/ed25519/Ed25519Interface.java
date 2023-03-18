@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  *  - Obtaining a PEM-encoded (v1, per RFC 5958) signing key seed string.
  *  - Getting verification key bytes (basically a public key) from a signing key seed.
  *  - Obtaining a DER-encoded (v1, per RFC 5958) verification key byte structure.
- *  - Obtaining a PEM-encoded (v1, per RFC 5958) verification key byte structure.
+ *  - Obtaining a PEM-encoded (v1, per RFC 5958) verification key string.
  *  - Signing data with a signing key seed.
  *  - Verifying a signature with verification key bytes.
  */

@@ -1,9 +1,18 @@
 use ed25519::Signature;
 use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes,};
-use jni::{objects::{JClass, JString}, sys::{jboolean, jbyteArray, jstring}, JNIEnv,};
-use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey,};
-use pkcs8::der::pem::LineEnding;
+use jni::{objects::JClass, sys::{jboolean, jbyteArray}, JNIEnv,};
+
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
+use ed25519::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePublicKey,};
+
 use std::{convert::TryFrom, panic, ptr,};
+
+#[cfg(feature = "pem")]
+use jni::objects::JString;
+#[cfg(feature = "pem")]
+use der::pem::LineEnding;
+#[cfg(feature = "pem")]
+use jni::sys::jstring;
 
 mod utils;
 
@@ -42,6 +51,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
 
 // SigningKeySeed bytes -> DER bytes
 #[no_mangle]
+#[cfg(feature = "pkcs8")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedEncoded(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -59,6 +69,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedE
 
 // SigningKeySeed bytes -> PEM string
 #[no_mangle]
+#[cfg(feature = "pem")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedPEM(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -77,6 +88,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedP
 
 // DER bytes -> SigningKeySeed bytes
 #[no_mangle]
+#[cfg(feature = "pkcs8")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivate(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -94,6 +106,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivate(
 
 // PEM string -> SigningKeySeed bytes
 #[no_mangle]
+#[cfg(feature = "pem")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivatePEM(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -110,6 +123,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivatePEM
 
 // VerificationKeyBytes bytes -> DER bytes
 #[no_mangle]
+#[cfg(feature = "pkcs8")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKeyBytesEncoded(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -128,6 +142,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
 
 // VerificationKeyBytes bytes -> PEM string
 #[no_mangle]
+#[cfg(feature = "pem")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKeyBytesPEM(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -146,6 +161,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
 
 // DER bytes -> VerificationKeyBytes bytes
 #[no_mangle]
+#[cfg(feature = "pkcs8")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePublic(
     env: JNIEnv<'_>,
     _: JClass<'_>,
@@ -163,6 +179,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePublic(
 
 // PEM string -> VerificationKeyBytes bytes
 #[no_mangle]
+#[cfg(feature = "pem")]
 pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePublicPEM(
     env: JNIEnv<'_>,
     _: JClass<'_>,

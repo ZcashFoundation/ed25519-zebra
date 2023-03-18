@@ -35,7 +35,7 @@
 //! # Example
 //! ```
 //! # use ed25519_zebra::*;
-//! let mut batch = batch::BatchVerifier::new();
+//! let mut batch = batch::Verifier::new();
 //! for _ in 0..32 {
 //!     let sk = SigningKey::new(rand::thread_rng());
 //!     let vk_bytes = VerificationKeyBytes::from(&sk);
@@ -113,7 +113,7 @@ impl Item {
 
 /// A batch verification context.
 #[derive(Default)]
-pub struct BatchVerifier {
+pub struct Verifier {
     /// Signature data queued for verification.
     signatures: HashMap<VerificationKeyBytes, Vec<(Scalar, Signature)>>,
     /// Caching this count avoids a hash traversal to figure out
@@ -121,10 +121,10 @@ pub struct BatchVerifier {
     batch_size: usize,
 }
 
-impl BatchVerifier {
+impl Verifier {
     /// Construct a new batch verifier.
-    pub fn new() -> BatchVerifier {
-        BatchVerifier::default()
+    pub fn new() -> Verifier {
+        Verifier::default()
     }
 
     /// Queue a (key, signature, message) tuple for verification.

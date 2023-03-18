@@ -1,31 +1,43 @@
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
 use hex;
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
 use std::convert::TryFrom;
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
 use ed25519_zebra::*;
+#[cfg(feature = "pkcs8")]
 pub use pkcs8::{
     EncodePrivateKey, EncodePublicKey, ObjectIdentifier, PrivateKeyInfo,
-    der::pem::LineEnding,
     spki::AlgorithmIdentifierRef,
 };
+#[cfg(feature = "pem")]
+use der::pem::LineEnding;
 
 /// Ed25519 PKCS#8 v1 private key encoded as ASN.1 DER.
+#[cfg(feature = "pkcs8")]
 const PKCS8_V1_DER: &[u8] = include_bytes!("examples/pkcs8-v1.der");
 
 /// Ed25519 PKCS#8 v1 private key encoded as PEM.
+#[cfg(feature = "pem")]
 const PKCS8_V1_PEM: &str = include_str!("examples/pkcs8-v1.pem");
 
 /// Ed25519 PKCS#8 v2 private key + public key encoded as ASN.1 DER.
+#[cfg(feature = "pkcs8")]
 const PKCS8_V2_DER: &[u8] = include_bytes!("examples/pkcs8-v2.der");
 
 /// Ed25519 PKCS#8 v1 private key encoded as PEM.
+#[cfg(feature = "pem")]
 const PKCS8_V2_PEM: &str = include_str!("examples/pkcs8-v2.pem");
 
 /// Ed25519 SubjectPublicKeyInfo encoded as ASN.1 DER.
+#[cfg(feature = "pkcs8")]
 const PUBLIC_KEY_DER: &[u8] = include_bytes!("examples/pubkey.der");
 
 /// Ed25519 SubjectPublicKeyInfo encoded as PEM.
+#[cfg(feature = "pem")]
 const PUBLIC_KEY_PEM: &str = include_str!("examples/pubkey.pem");
 
 #[test]
+#[cfg(feature = "pkcs8")]
 fn encode_signing_key_to_der() {
     let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
     let mut sk_array = [0u8; 32];
@@ -53,6 +65,7 @@ fn encode_signing_key_to_pem() {
 }
 
 #[test]
+#[cfg(feature = "pkcs8")]
 fn encode_verification_key_to_der() {
     let vk_bytes_string = "19bf44096984cdfe8541bac167dc3b96c85086aa30b6b6cb0c5c38ad703166e1";
     let mut vk_array = [0u8; 32];
