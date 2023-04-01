@@ -7,9 +7,10 @@ publish = false
 edition = "2018"
 
 [dependencies]
+der = { version = "0.7.1", optional = true }
 ed25519-zebra = { path = "../../", version = "3.1.0", features = ["pem", "pkcs8"] }
 failure = "0.1.8"
-jni = "0.20.0"
+jni = "0.21.1"
 pkcs8 = { version = "0.10.1", optional = true, features = ["alloc", "pem"] }
 ed25519 = { version = "2.2.0", features = ["alloc", "pem"] }
 
@@ -21,6 +22,6 @@ crate-type = ["staticlib", "cdylib"]
 [features]
 nightly = []
 default = ["std"]
-pem = []
+pem = ["der"]
 pkcs8 = ["dep:pkcs8"]
 std = []
