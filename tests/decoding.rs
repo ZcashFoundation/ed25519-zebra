@@ -5,7 +5,7 @@ use ed25519_zebra::*;
 use hex;
 
 #[cfg(feature = "pkcs8")]
-use pkcs8::{DecodePrivateKey, DecodePublicKey,};
+use pkcs8::{DecodePrivateKey, DecodePublicKey};
 
 /// Ed25519 PKCS#8 v1 private key encoded as ASN.1 DER.
 #[cfg(feature = "pkcs8")]

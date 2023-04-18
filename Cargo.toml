@@ -16,7 +16,7 @@ features = ["nightly"]
 [dependencies]
 # "digest" is exempt from SemVer, so we should always use a specific version
 curve25519-dalek = { version = "=4.0.0-pre.5", default-features = false, features = ["alloc", "digest"] }
-der = "0.7.1"
+der = { version = "0.7.1", optional = true }
 ed25519 = { version = "2.2.0", features = ["alloc", "pem"] }
 hashbrown = "0.12.0"
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
@@ -37,7 +37,7 @@ once_cell = "1.4"
 [features]
 nightly = []
 default = ["serde", "std"]
-pem = []
+pem = ["der"]
 pkcs8 = ["dep:pkcs8"]
 std = []
 

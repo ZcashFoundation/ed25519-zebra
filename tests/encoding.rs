@@ -1,16 +1,16 @@
-#[cfg(any(feature = "pem", feature = "pkcs8"))]
-use hex;
-#[cfg(any(feature = "pem", feature = "pkcs8"))]
-use std::convert::TryFrom;
-#[cfg(any(feature = "pem", feature = "pkcs8"))]
-use ed25519_zebra::*;
-#[cfg(feature = "pkcs8")]
-pub use pkcs8::{
-    EncodePrivateKey, EncodePublicKey, ObjectIdentifier, PrivateKeyInfo,
-    spki::AlgorithmIdentifierRef,
-};
 #[cfg(feature = "pem")]
 use der::pem::LineEnding;
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
+use ed25519_zebra::*;
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
+use hex;
+#[cfg(feature = "pkcs8")]
+pub use pkcs8::{
+    spki::AlgorithmIdentifierRef, EncodePrivateKey, EncodePublicKey, ObjectIdentifier,
+    PrivateKeyInfo,
+};
+#[cfg(any(feature = "pem", feature = "pkcs8"))]
+use std::convert::TryFrom;
 
 /// Ed25519 PKCS#8 v1 private key encoded as ASN.1 DER.
 #[cfg(feature = "pkcs8")]
@@ -59,8 +59,16 @@ fn encode_signing_key_to_pem() {
 
     let sk = SigningKey::from(sk_array);
     let vk = sk.to_public_key_pem(LineEnding::default()).unwrap();
-    assert_eq!(sk.to_pkcs8_pem_v1(LineEnding::default()).unwrap().as_bytes(), PKCS8_V1_PEM.as_bytes());
-    assert_eq!(sk.to_pkcs8_pem(LineEnding::default()).unwrap().as_bytes(), PKCS8_V2_PEM.as_bytes());
+    assert_eq!(
+        sk.to_pkcs8_pem_v1(LineEnding::default())
+            .unwrap()
+            .as_bytes(),
+        PKCS8_V1_PEM.as_bytes()
+    );
+    assert_eq!(
+        sk.to_pkcs8_pem(LineEnding::default()).unwrap().as_bytes(),
+        PKCS8_V2_PEM.as_bytes()
+    );
     assert_eq!(vk, PUBLIC_KEY_PEM);
 }
 

@@ -9,7 +9,7 @@ Note that Scala 3 is required to build and test the JNI code.
 
 ## Build Requirements
 - For PEM support, the `pem` feature must be enabled in both `Cargo.toml` files
-  (`pem = []`).
+  (`pem = ["der"]`).
 - For PKCS #8 (DER) support, the `pkcs8` feature must be enabled in both `Cargo.toml`
   files (`pkcs8 = ["dep:pkcs8"]`).
 
@@ -36,7 +36,7 @@ after the mandatory compilation steps.
   flag if working with debug builds. This script performs some JAR setup steps, and
   enables the local Scala tests against the JNI code.
 - Run `sbt clean publishLocal` from the `ed25519jni/jvm` subdirectory. This
-  generates the final `ed25519jni.jar` file in a local Apache Ivy subdirectory.
+  generates the final `ed25519jni.jar` file in the {$HOME}/.ivy2/local subdirectory.
 
 ### Direct library usage
 Use a preferred method to load the Rust core and JNI libraries directly as

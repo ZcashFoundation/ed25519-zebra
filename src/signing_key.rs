@@ -1,13 +1,13 @@
 #[cfg(feature = "pkcs8")]
-const OID: ObjectIdentifier = ObjectIdentifier::new_unwrap("1.3.101.112");  // RFC 8410
+const OID: ObjectIdentifier = ObjectIdentifier::new_unwrap("1.3.101.112"); // RFC 8410
 #[cfg(feature = "pkcs8")]
 const ALGORITHM_ID: AlgorithmIdentifierRef = AlgorithmIdentifierRef {
     oid: OID,
     parameters: None,
 };
 
-use core::convert::{TryFrom, TryInto,};
 use crate::Error;
+use core::convert::{TryFrom, TryInto};
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
@@ -18,12 +18,15 @@ pub use ed25519::{
     ComponentBytes, Error as Ed25519Error, KeypairBytes, PublicKeyBytes, Signature,
 };
 
-#[cfg(feature = "pkcs8")]
-use pkcs8::{der::SecretDocument};
-#[cfg(feature = "pkcs8")]
-use pkcs8::{DecodePrivateKey, Document, DecodePublicKey, EncodePrivateKey, EncodePublicKey, ObjectIdentifier, PrivateKeyInfo, spki::AlgorithmIdentifierRef};
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use der::pem::LineEnding;
+#[cfg(feature = "pkcs8")]
+use pkcs8::der::SecretDocument;
+#[cfg(feature = "pkcs8")]
+use pkcs8::{
+    spki::AlgorithmIdentifierRef, DecodePrivateKey, DecodePublicKey, Document, EncodePrivateKey,
+    EncodePublicKey, ObjectIdentifier, PrivateKeyInfo,
+};
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use zeroize::Zeroizing;
 
@@ -174,10 +177,15 @@ impl TryFrom<&KeypairBytes> for SigningKey {
 
         // Validate the public key in the PKCS#8 document if present
         if let Some(public_bytes) = &pkcs8_key.public_key {
-            let expected_verifying_key = VerificationKey::from_public_key_der(public_bytes.as_ref())
-                .map_err(|_| pkcs8::Error::KeyMalformed)?;
+            let expected_verifying_key =
+                VerificationKey::from_public_key_der(public_bytes.as_ref())
+                    .map_err(|_| pkcs8::Error::KeyMalformed)?;
 
-            if VerificationKey::try_from(&signing_key.unwrap()).unwrap().A_bytes != expected_verifying_key.into() {
+            if VerificationKey::try_from(&signing_key.unwrap())
+                .unwrap()
+                .A_bytes
+                != expected_verifying_key.into()
+            {
                 return Err(pkcs8::Error::KeyMalformed);
             }
         }
@@ -215,7 +223,7 @@ impl EncodePrivateKey for SigningKey {
         SecretDocument::try_from(PrivateKeyInfo {
             algorithm: ALGORITHM_ID,
             private_key: &final_key,
-            public_key: Some(self.vk.A_bytes.0.as_slice())
+            public_key: Some(self.vk.A_bytes.0.as_slice()),
         })
     }
 }
@@ -233,14 +241,11 @@ impl DecodePrivateKey for SigningKey {
             Some(vk2) => {
                 if sk.vk.A_bytes.0 == vk2.to_bytes() {
                     Ok(sk)
-                }
-                else {
+                } else {
                     Err(pkcs8::Error::KeyMalformed)
                 }
             }
-            None => {
-                Ok(sk)
-            }
+            None => Ok(sk),
         }
     }
 }
@@ -286,13 +291,15 @@ impl SigningKey {
 
         let s_bytes = (r + k * self.s).to_bytes();
 
-        Signature::from_components(R_bytes.into(), s_bytes.into())
+        Signature::from_components(R_bytes, s_bytes)
     }
 
     /// Parse [`SigningKey`] from ASN.1 DER bytes.
     #[cfg(feature = "pkcs8")]
     pub fn from_der(bytes: &[u8]) -> pkcs8::Result<Self> {
-        bytes.try_into().map_err(|_| pkcs8::Error::ParametersMalformed)
+        bytes
+            .try_into()
+            .map_err(|_| pkcs8::Error::ParametersMalformed)
     }
 
     /// Serialize [`SigningKey`] to an ASN.1 DER-encoded secret document. Note that this
@@ -305,16 +312,16 @@ impl SigningKey {
         let mut final_key = [0u8; 34];
         final_key[..2].copy_from_slice(&[0x04, 0x20]);
         final_key[2..].copy_from_slice(&self.seed);
-        SecretDocument::try_from(PrivateKeyInfo::new(
-            ALGORITHM_ID,
-            &final_key,
-        ))
+        SecretDocument::try_from(PrivateKeyInfo::new(ALGORITHM_ID, &final_key))
     }
 
     /// Serialize [`SigningKey`] as a PEM-encoded PKCS#8 string. Note that this
     /// will generate a v1 (RFC 5958) PEM encoding without a public key.
     #[cfg(all(feature = "pem", feature = "pkcs8"))]
-    pub fn to_pkcs8_pem_v1(&self, line_ending: LineEnding) -> Result<Zeroizing<String>, pkcs8::Error> {
+    pub fn to_pkcs8_pem_v1(
+        &self,
+        line_ending: LineEnding,
+    ) -> Result<Zeroizing<String>, pkcs8::Error> {
         let doc = self.to_pkcs8_der_v1()?;
         Ok(doc.to_pem(PrivateKeyInfo::PEM_LABEL, line_ending)?)
     }

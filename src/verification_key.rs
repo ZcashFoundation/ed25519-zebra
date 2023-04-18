@@ -14,11 +14,13 @@ pub use ed25519::{
 };
 
 #[cfg(feature = "pkcs8")]
-use pkcs8::{Document, ObjectIdentifier,};
-#[cfg(feature = "pkcs8")]
 use pkcs8::der::asn1::BitStringRef;
 #[cfg(feature = "pkcs8")]
-use pkcs8::spki::{AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef};
+use pkcs8::spki::{
+    AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef,
+};
+#[cfg(feature = "pkcs8")]
+use pkcs8::{Document, ObjectIdentifier};
 
 use crate::Error;
 
@@ -49,7 +51,7 @@ pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         fmt.debug_tuple("VerificationKeyBytes")
-            .field(&hex::encode(&self.0))
+            .field(&hex::encode(self.0))
             .finish()
     }
 }
@@ -217,7 +219,8 @@ impl Verifier<Signature> for VerificationKey {
         message: &[u8],
         signature: &Signature,
     ) -> Result<(), ed25519::signature::Error> {
-        self.verify(signature, message).map_err(|_| ed25519::signature::Error::new())
+        self.verify(signature, message)
+            .map_err(|_| ed25519::signature::Error::new())
     }
 }
 

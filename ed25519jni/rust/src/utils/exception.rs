@@ -52,18 +52,12 @@ fn throw(env: &mut JNIEnv, description: &str) {
     let exception = match env.find_class("java/lang/RuntimeException") {
         Ok(val) => val,
         Err(e) => {
-            eprintln!(
-                "Unable to find 'RuntimeException' class: {}",
-                e
-            );
+            eprintln!("Unable to find 'RuntimeException' class: {}", e);
             return;
         }
     };
     if let Err(e) = env.throw_new(exception, description) {
-        eprintln!(
-            "Unable to find 'RuntimeException' class: {}",
-            e
-        );
+        eprintln!("Unable to find 'RuntimeException' class: {}", e);
     }
 }
 

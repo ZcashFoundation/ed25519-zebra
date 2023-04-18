@@ -1,16 +1,20 @@
 use ed25519::Signature;
-use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes,};
-use jni::{objects::{JByteArray, JClass}, sys::jboolean, JNIEnv,};
+use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
+use jni::{
+    objects::{JByteArray, JClass},
+    sys::jboolean,
+    JNIEnv,
+};
 
 #[cfg(any(feature = "pem", feature = "pkcs8"))]
-use ed25519::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePublicKey,};
+use ed25519::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePublicKey};
 
-use std::{convert::TryFrom, panic, panic::AssertUnwindSafe,};
+use std::{convert::TryFrom, panic, panic::AssertUnwindSafe};
 
-#[cfg(feature = "pem")]
-use jni::objects::JString;
 #[cfg(feature = "pem")]
 use der::pem::LineEnding;
+#[cfg(feature = "pem")]
+use jni::objects::JString;
 
 mod utils;
 
@@ -25,7 +29,7 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_checkVerificationK
     let mut vkb = [0u8; 32];
     vkb.copy_from_slice(&env.convert_byte_array(vk_bytes).unwrap());
 
-    let vkb_result = VerificationKeyBytes::try_from(VerificationKeyBytes::from(vkb));
+    let vkb_result = VerificationKeyBytes::try_from(vkb);
     vkb_result.is_ok() as _
 }
 
@@ -60,7 +64,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedE
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        Ok(env.byte_array_from_slice(sk.to_pkcs8_der_v1().unwrap().as_bytes()).unwrap())
+        Ok(env
+            .byte_array_from_slice(sk.to_pkcs8_der_v1().unwrap().as_bytes())
+            .unwrap())
     }));
     unwrap_exc_or_default(&mut env, res)
 }
@@ -78,7 +84,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getSigningKeySeedP
         sks.copy_from_slice(&env.convert_byte_array(sks_bytes).unwrap());
         let sk = SigningKey::from(sks);
 
-        let output = env.new_string(&*sk.to_pkcs8_pem_v1(LineEnding::default()).unwrap()).expect("Couldn't create SKS PEM string!");
+        let output = env
+            .new_string(&*sk.to_pkcs8_pem_v1(LineEnding::default()).unwrap())
+            .expect("Couldn't create SKS PEM string!");
         Ok(output.into())
     }));
     unwrap_exc_or_default(&mut env, res)
@@ -111,7 +119,10 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivatePEM
     pem_java_string: JString<'local>,
 ) -> JByteArray<'local> {
     let res = panic::catch_unwind(AssertUnwindSafe(|| {
-        let pem_string: String = env.get_string(&pem_java_string).expect("Couldn't get PEM Java string!").into();
+        let pem_string: String = env
+            .get_string(&pem_java_string)
+            .expect("Couldn't get PEM Java string!")
+            .into();
         let sk = SigningKey::from_pkcs8_pem(&pem_string).unwrap();
 
         Ok(env.byte_array_from_slice(&sk.as_ref()).unwrap())
@@ -122,7 +133,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePrivatePEM
 // VerificationKeyBytes bytes -> DER bytes
 #[no_mangle]
 #[cfg(feature = "pkcs8")]
-pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKeyBytesEncoded<'local>(
+pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKeyBytesEncoded<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _: JClass<'local>,
     vk_bytes: JByteArray<'local>,
@@ -133,7 +146,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
 
         let vkb = VerificationKeyBytes::try_from(vk_data).unwrap();
         let vk = VerificationKey::try_from(vkb).unwrap();
-        Ok(env.byte_array_from_slice(vk.to_public_key_der().unwrap().as_ref()).unwrap())
+        Ok(env
+            .byte_array_from_slice(vk.to_public_key_der().unwrap().as_ref())
+            .unwrap())
     }));
     unwrap_exc_or_default(&mut env, res)
 }
@@ -151,7 +166,9 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_getVerificationKey
         vkb.copy_from_slice(&env.convert_byte_array(vk_bytes).unwrap());
         let vk = VerificationKey::try_from(VerificationKeyBytes::from(vkb)).unwrap();
 
-        let output = env.new_string(vk.to_public_key_pem(LineEnding::default()).unwrap()).expect("Couldn't create VKB PEM string!");
+        let output = env
+            .new_string(vk.to_public_key_pem(LineEnding::default()).unwrap())
+            .expect("Couldn't create VKB PEM string!");
         Ok(output.into())
     }));
     unwrap_exc_or_default(&mut env, res)
@@ -184,7 +201,10 @@ pub extern "system" fn Java_org_zfnd_ed25519_Ed25519Interface_generatePublicPEM<
     pem_java_string: JString<'local>,
 ) -> JByteArray<'local> {
     let res = panic::catch_unwind(AssertUnwindSafe(|| {
-        let pem_string: String = env.get_string(&pem_java_string).expect("Couldn't get VKB PEM Java string!").into();
+        let pem_string: String = env
+            .get_string(&pem_java_string)
+            .expect("Couldn't get VKB PEM Java string!")
+            .into();
         let vk = VerificationKey::from_public_key_pem(&pem_string).unwrap();
 
         Ok(env.byte_array_from_slice(&vk.as_ref()).unwrap())
