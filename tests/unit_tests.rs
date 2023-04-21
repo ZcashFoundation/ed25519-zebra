@@ -2,8 +2,7 @@ use core::convert::TryFrom;
 
 use rand::thread_rng;
 
-use ed25519::Signature;
-use ed25519_zebra::{SigningKey, VerificationKey, VerificationKeyBytes};
+use ed25519_zebra::{Signature, SigningKey, VerificationKey, VerificationKeyBytes};
 
 #[test]
 fn parsing() {
