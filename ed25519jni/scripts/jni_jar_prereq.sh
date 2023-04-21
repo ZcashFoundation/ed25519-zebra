@@ -13,13 +13,17 @@ script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ed25519jni_jvm_dir="${script_dir}/../jvm"
 ed25519jni_rust_dir="${script_dir}/../rust"
 
-# Script to run in order to compile a JAR with the Ed25519 JNI libraries from Rust.
+# Script to place Rust libraries in a library readable by the JVM (run tests or build a JAR).
 # Assumes SciJava's NativeLoader will be used.
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   nativeDir="${ed25519jni_jvm_dir}/natives/linux_64"
   nativeSuffix="so"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  nativeDir="${ed25519jni_jvm_dir}/natives/osx_64"
+  if [[ "$(uname -m)" == 'x86_64' ]]; then
+    nativeDir="${ed25519jni_jvm_dir}/natives/osx_64"
+  else
+    nativeDir="${ed25519jni_jvm_dir}/natives/osx_arm64"
+  fi
   nativeSuffix="dylib"
 else
   echo "JNI is unsupported on this OS. Exiting."

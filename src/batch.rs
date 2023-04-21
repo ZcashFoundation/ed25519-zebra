@@ -61,7 +61,8 @@ use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
 use sha2::Sha512;
 
-use crate::{Error, Signature, VerificationKey, VerificationKeyBytes};
+use crate::{Error, VerificationKey, VerificationKeyBytes};
+use ed25519::Signature;
 
 // Shim to generate a u128 without importing `rand`.
 fn gen_u128<R: RngCore + CryptoRng>(mut rng: R) -> u128 {
@@ -88,7 +89,7 @@ impl<'msg, M: AsRef<[u8]> + ?Sized> From<(VerificationKeyBytes, Signature, &'msg
         // Compute k now to avoid dependency on the msg lifetime.
         let k = Scalar::from_hash(
             Sha512::default()
-                .chain(&sig.R_bytes[..])
+                .chain(&sig.r_bytes()[..])
                 .chain(&vk_bytes.0[..])
                 .chain(msg),
         );
@@ -183,10 +184,10 @@ impl Verifier {
             let mut A_coeff = Scalar::ZERO;
 
             for (k, sig) in sigs.iter() {
-                let R = CompressedEdwardsY(sig.R_bytes)
+                let R = CompressedEdwardsY(*sig.r_bytes())
                     .decompress()
                     .ok_or(Error::InvalidSignature)?;
-                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(sig.s_bytes))
+                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*sig.s_bytes()))
                     .ok_or(Error::InvalidSignature)?;
                 let z = Scalar::from(gen_u128(&mut rng));
                 B_coeff -= z * s;

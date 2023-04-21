@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
  * Java wrapper class for signing key seeds that performs some sanity checking.
  */
 public class SigningKeySeed {
+    /**
+     * Length of signing key seeds.
+     **/
     public static final int BYTE_LENGTH = 32;
     private static final Logger logger = LoggerFactory.getLogger(SigningKeySeed.class);
 
@@ -34,7 +37,9 @@ public class SigningKeySeed {
     }
 
     /**
-     * @return a copy of the wrapped bytes
+     * Get a copy of the actual signing key seed bytes.
+     *
+     * @return a byte array copy of the wrapped bytes
      */
     public byte[] getSigningKeySeedCopy() {
         return seed.clone();
@@ -42,6 +47,62 @@ public class SigningKeySeed {
 
     byte[] getSigningKeySeed() {
         return seed;
+    }
+
+    /**
+     * Generate a SigningKeySeed object from DER (RFC 8410) bytes.
+     *
+     * @param derBytes the encoded DER bytes
+     * @return a new SigningKeySeed object
+     */
+    public static SigningKeySeed generatePrivate(byte[] derBytes) {
+        return SigningKeySeed.fromBytesOrThrow(Ed25519Interface.generatePrivate(derBytes));
+    }
+
+    /**
+     * Generate a SigningKeySeed object from PEM (RFC 5958) bytes.
+     *
+     * @param pemString the encoded PEM string
+     * @return a new SigningKeySeed object
+     */
+    public static SigningKeySeed generatePrivatePEM(String pemString) {
+        return SigningKeySeed.fromBytesOrThrow(Ed25519Interface.generatePrivatePEM(pemString));
+    }
+
+    /**
+     * Get the encoded DER (RFC 8410) bytes for signing key seed bytes.
+     *
+     * @return the encoded DER bytes
+     */
+    public byte[] getEncoded() {
+        return Ed25519Interface.getSigningKeySeedEncoded(this);
+    }
+
+    /**
+     * Get the encoded PEM (RFC 5958) bytes for signing key seed bytes.
+     *
+     * @return the encoded PEM bytes
+     */
+    public String getPEM() {
+        return Ed25519Interface.getSigningKeySeedPEM(this);
+    }
+
+    /**
+     * Get the signing key algorithm name.
+     *
+     * @return the signing key algorithm name
+     */
+    public static String getAlgorithm() {
+        return "EdDSA";
+    }
+
+    /**
+     * Get the signing key format.
+     *
+     * @return the signing key algorithm format
+     */
+    public static String getFormat() {
+        return "PKCS#8";
     }
 
     /**

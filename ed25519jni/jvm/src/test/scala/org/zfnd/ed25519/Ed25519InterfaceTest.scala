@@ -2,14 +2,15 @@ package org.zfnd.ed25519
 
 import java.math.BigInteger
 import java.security.SecureRandom
-import org.scalatest.{ FlatSpec, MustMatchers }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 
-class Ed25519InterfaceTest extends FlatSpec with MustMatchers {
+class Ed25519InterfaceTest extends AnyFlatSpec with Matchers {
   private val RANDOM = new SecureRandom
 
-  private def convertBytesToHex(bytes: Seq[Byte]): String = {
+  private def convertBytesToHex(bytes: Array[Byte]): String = {
     val sb = new StringBuilder
-    for (b <- bytes) {
+    for (b <- bytes.toIndexedSeq) {
       sb.append(String.format("%02x", Byte.box(b)))
     }
     sb.toString

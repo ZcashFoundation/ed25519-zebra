@@ -1,5 +1,4 @@
 use core::convert::{TryFrom, TryInto};
-
 use curve25519_dalek::{
     digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
@@ -9,7 +8,21 @@ use curve25519_dalek::{
 use sha2::Sha512;
 use zeroize::DefaultIsZeroes;
 
-use crate::{Error, Signature};
+pub use ed25519::{
+    signature::{Signer, Verifier},
+    Signature,
+};
+
+#[cfg(feature = "pkcs8")]
+use pkcs8::der::asn1::BitStringRef;
+#[cfg(feature = "pkcs8")]
+use pkcs8::spki::{
+    AlgorithmIdentifierRef, DecodePublicKey, EncodePublicKey, SubjectPublicKeyInfoRef,
+};
+#[cfg(feature = "pkcs8")]
+use pkcs8::{Document, ObjectIdentifier};
+
+use crate::Error;
 
 /// A refinement type for `[u8; 32]` indicating that the bytes represent an
 /// encoding of an Ed25519 verification key.
@@ -38,7 +51,7 @@ pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         fmt.debug_tuple("VerificationKeyBytes")
-            .field(&hex::encode(&self.0))
+            .field(&hex::encode(self.0))
             .finish()
     }
 }
@@ -51,7 +64,7 @@ impl AsRef<[u8]> for VerificationKeyBytes {
 
 impl TryFrom<&[u8]> for VerificationKeyBytes {
     type Error = Error;
-    fn try_from(slice: &[u8]) -> Result<VerificationKeyBytes, Error> {
+    fn try_from(slice: &[u8]) -> Result<VerificationKeyBytes, Self::Error> {
         if slice.len() == 32 {
             let mut bytes = [0u8; 32];
             bytes[..].copy_from_slice(slice);
@@ -71,6 +84,15 @@ impl From<[u8; 32]> for VerificationKeyBytes {
 impl From<VerificationKeyBytes> for [u8; 32] {
     fn from(refined: VerificationKeyBytes) -> [u8; 32] {
         refined.0
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
+    type Error = Error;
+
+    fn try_from(spki: SubjectPublicKeyInfoRef) -> Result<VerificationKeyBytes, Error> {
+        Ok(VerificationKeyBytes::try_from(spki.subject_public_key.as_bytes().unwrap()).unwrap())
     }
 }
 
@@ -164,6 +186,44 @@ impl TryFrom<[u8; 32]> for VerificationKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
+impl EncodePublicKey for VerificationKey {
+    /// Serialize [`VerificationKey`] to an ASN.1 DER-encoded document.
+    fn to_public_key_der(&self) -> pkcs8::spki::Result<Document> {
+        let alg_info = AlgorithmIdentifierRef {
+            oid: ObjectIdentifier::new_unwrap("1.3.101.112"), // RFC 8410
+            parameters: None,
+        };
+        SubjectPublicKeyInfoRef {
+            algorithm: alg_info,
+            subject_public_key: BitStringRef::from_bytes(&self.A_bytes.0[..])?,
+        }
+        .try_into()
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl DecodePublicKey for VerificationKey {
+    /// Deserialize [`VerificationKey`] from ASN.1 DER bytes (32 bytes).
+    fn from_public_key_der(bytes: &[u8]) -> Result<Self, pkcs8::spki::Error> {
+        let spki = SubjectPublicKeyInfoRef::try_from(bytes).unwrap();
+        let pk_bytes = spki.subject_public_key.as_bytes().unwrap();
+        Ok(Self::try_from(pk_bytes).unwrap())
+    }
+}
+
+impl Verifier<Signature> for VerificationKey {
+    /// Verify a [`Signature`] object against a given [`VerificationKey`].
+    fn verify(
+        &self,
+        message: &[u8],
+        signature: &Signature,
+    ) -> Result<(), ed25519::signature::Error> {
+        self.verify(signature, message)
+            .map_err(|_| ed25519::signature::Error::new())
+    }
+}
+
 impl VerificationKey {
     /// Verify a purported `signature` on the given `msg`.
     ///
@@ -189,7 +249,7 @@ impl VerificationKey {
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         let k = Scalar::from_hash(
             Sha512::default()
-                .chain(&signature.R_bytes[..])
+                .chain(&signature.r_bytes()[..])
                 .chain(&self.A_bytes.0[..])
                 .chain(msg),
         );
@@ -201,10 +261,10 @@ impl VerificationKey {
     #[allow(non_snake_case)]
     pub(crate) fn verify_prehashed(&self, signature: &Signature, k: Scalar) -> Result<(), Error> {
         // `s_bytes` MUST represent an integer less than the prime `l`.
-        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(signature.s_bytes))
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
             .ok_or(Error::InvalidSignature)?;
         // `R_bytes` MUST be an encoding of a point on the twisted Edwards form of Curve25519.
-        let R = CompressedEdwardsY(signature.R_bytes)
+        let R = CompressedEdwardsY(*signature.r_bytes())
             .decompress()
             .ok_or(Error::InvalidSignature)?;
         // We checked the encoding of A_bytes when constructing `self`.

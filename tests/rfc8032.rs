@@ -5,13 +5,15 @@
 //! in consensus.rs.
 
 use bincode;
+use ed25519::Signature;
 use ed25519_zebra::*;
 use hex;
 
 fn rfc8032_test_case(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, sig_bytes: Vec<u8>, msg: Vec<u8>) {
     let sk: SigningKey = bincode::deserialize(&sk_bytes).expect("sk should deserialize");
     let pk: VerificationKey = bincode::deserialize(&pk_bytes).expect("pk should deserialize");
-    let sig: Signature = bincode::deserialize(&sig_bytes).expect("sig should deserialize");
+    let sig: Signature =
+        Signature::from_slice(sig_bytes.as_slice()).expect("sig should deserialize");
 
     assert!(pk.verify(&sig, &msg).is_ok(), "verification failed");
 

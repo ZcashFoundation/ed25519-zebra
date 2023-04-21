@@ -32,12 +32,10 @@ fn parsing() {
     let sk3: SigningKey = bincode::deserialize(sk.as_ref()).unwrap();
     let pk3: VerificationKey = bincode::deserialize(pk.as_ref()).unwrap();
     let pkb3: VerificationKeyBytes = bincode::deserialize(pkb.as_ref()).unwrap();
-    let sig3: Signature = bincode::deserialize(<[u8; 64]>::from(sig).as_ref()).unwrap();
 
     assert_eq!(&sk_array[..], sk3.as_ref());
     assert_eq!(&pk_array[..], pk3.as_ref());
     assert_eq!(&pkb_array[..], pkb3.as_ref());
-    assert_eq!(&sig_array[..], <[u8; 64]>::from(sig3).as_ref());
 }
 
 #[test]

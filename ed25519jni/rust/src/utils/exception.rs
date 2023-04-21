@@ -21,7 +21,7 @@ type ExceptionResult<T> = thread::Result<Result<T, Error>>;
 
 // Returns value or "throws" exception. `error_val` is returned, because exception will be thrown
 // at the Java side. So this function should be used only for the `panic::catch_unwind` result.
-pub fn unwrap_exc_or<T>(env: &JNIEnv, res: ExceptionResult<T>, error_val: T) -> T {
+pub fn unwrap_exc_or<T>(env: &mut JNIEnv, res: ExceptionResult<T>, error_val: T) -> T {
     match res {
         Ok(Ok(val)) => val,
         Ok(Err(jni_error)) => {
@@ -40,25 +40,24 @@ pub fn unwrap_exc_or<T>(env: &JNIEnv, res: ExceptionResult<T>, error_val: T) -> 
     }
 }
 
+/// Same as `unwrap_exc_or` but returns default value.
+pub fn unwrap_exc_or_default<T: Default>(env: &mut JNIEnv, res: ExceptionResult<T>) -> T {
+    unwrap_exc_or(env, res, T::default())
+}
+
 // Calls a corresponding `JNIEnv` method, so exception will be thrown when execution returns to
 // the Java side.
-fn throw(env: &JNIEnv, description: &str) {
+fn throw(env: &mut JNIEnv, description: &str) {
     // We cannot throw exception from this function, so errors should be written in log instead.
     let exception = match env.find_class("java/lang/RuntimeException") {
         Ok(val) => val,
         Err(e) => {
-            eprintln!(
-                "Unable to find 'RuntimeException' class: {}",
-                e
-            );
+            eprintln!("Unable to find 'RuntimeException' class: {}", e);
             return;
         }
     };
     if let Err(e) = env.throw_new(exception, description) {
-        eprintln!(
-            "Unable to find 'RuntimeException' class: {}",
-            e
-        );
+        eprintln!("Unable to find 'RuntimeException' class: {}", e);
     }
 }
 
@@ -110,6 +109,6 @@ mod tests {
     }
 
     fn panic_error<T: Send + 'static>(val: T) -> Box<dyn Any + Send> {
-        panic::catch_unwind(panic::AssertUnwindSafe(|| panic!(val))).unwrap_err()
+        panic::catch_unwind(panic::AssertUnwindSafe(|| std::panic::panic_any(val))).unwrap_err()
     }
 }

@@ -9,6 +9,9 @@ import org.slf4j.LoggerFactory;
  * Java wrapper class for verification key bytes that performs some sanity checking.
  */
 public class VerificationKeyBytes {
+    /**
+     * Length of verification keys.
+     **/
     public static final int BYTE_LENGTH = 32;
     private static final Logger logger = LoggerFactory.getLogger(VerificationKeyBytes.class);
 
@@ -26,7 +29,9 @@ public class VerificationKeyBytes {
     }
 
     /**
-     * @return a copy of the wrapped bytes
+     * Get a copy of the actual verification key bytes.
+     *
+     * @return a byte array with a copy of the wrapped bytes
      */
     public byte[] getVerificationKeyBytesCopy() {
         return vkb.clone();
@@ -34,6 +39,44 @@ public class VerificationKeyBytes {
 
     byte[] getVerificationKeyBytes() {
         return vkb;
+    }
+
+    /**
+     * Generate a VerificationKeyBytes object from DER (RFC 8410) bytes.
+     *
+     * @param derBytes the encoded DER bytes
+     * @return a new VerificationKeyBytes object
+     */
+    public static VerificationKeyBytes generatePublic(byte[] derBytes) {
+        return VerificationKeyBytes.fromBytesOrThrow(Ed25519Interface.generatePublic(derBytes));
+    }
+
+    /**
+     * Generate a VerificationKeyBytes object from PEM (RFC 8410) bytes.
+     *
+     * @param pemString the encoded PEM string
+     * @return a new VerificationKeyBytes object
+     */
+    public static VerificationKeyBytes generatePublicPEM(String pemString) {
+        return VerificationKeyBytes.fromBytesOrThrow(Ed25519Interface.generatePublicPEM(pemString));
+    }
+
+    /**
+     * Get the encoded DER (RFC 8410) bytes for verification key bytes.
+     *
+     * @return the encoded DER bytes
+     */
+    public byte[] getEncoded() {
+        return Ed25519Interface.getVerificationKeyBytesEncoded(this);
+    }
+
+    /**
+     * Get the encoded PEM (RFC 8410) bytes for verification key bytes.
+     *
+     * @return the encoded PEM bytes
+     */
+    public String getPEM() {
+        return Ed25519Interface.getVerificationKeyBytesPEM(this);
     }
 
     /**
@@ -64,6 +107,24 @@ public class VerificationKeyBytes {
     public static VerificationKeyBytes fromBytesOrThrow(final byte[] bytes) {
         return fromBytes(bytes)
             .orElseThrow(() -> new IllegalArgumentException("Expected " + BYTE_LENGTH + " bytes that encode a verification key!"));
+    }
+
+    /**
+     * Get the verification key algorithm name.
+     *
+     * @return the verification key algorithm name
+     */
+    public static String getAlgorithm() {
+        return "EdDSA";
+    }
+
+    /**
+     * Get the verification key algorithm format.
+     *
+     * @return the verification key algorithm format
+     */
+    public static String getFormat() {
+        return "X.509";
     }
 
     @Override
