@@ -7,7 +7,9 @@ const ALGORITHM_ID: AlgorithmIdentifierRef = AlgorithmIdentifierRef {
 };
 
 use crate::Error;
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
+#[cfg(feature = "pem")]
+use core::convert::TryInto;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
@@ -15,8 +17,11 @@ use zeroize::Zeroize;
 
 pub use ed25519::{
     signature::{Signer, Verifier},
-    ComponentBytes, Error as Ed25519Error, KeypairBytes, PublicKeyBytes, Signature,
+    ComponentBytes, Error as Ed25519Error, Signature,
 };
+
+#[cfg(feature = "pem")]
+pub use ed25519::{KeypairBytes, PublicKeyBytes};
 
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use der::pem::LineEnding;
@@ -194,12 +199,14 @@ impl TryFrom<&KeypairBytes> for SigningKey {
     }
 }
 
+#[cfg(feature = "pem")]
 impl From<SigningKey> for KeypairBytes {
     fn from(signing_key: SigningKey) -> KeypairBytes {
         KeypairBytes::from(&signing_key)
     }
 }
 
+#[cfg(feature = "pem")]
 impl From<&SigningKey> for KeypairBytes {
     fn from(signing_key: &SigningKey) -> KeypairBytes {
         KeypairBytes {
