@@ -118,7 +118,7 @@ impl From<[u8; 32]> for SigningKey {
         };
 
         // Compute the public key as A = [s]B.
-        let A = &s * &constants::ED25519_BASEPOINT_TABLE;
+        let A = &s * constants::ED25519_BASEPOINT_TABLE;
 
         SigningKey {
             seed,
@@ -278,7 +278,7 @@ impl SigningKey {
     pub fn sign(&self, msg: &[u8]) -> Signature {
         let r = Scalar::from_hash(Sha512::default().chain(&self.prefix[..]).chain(msg));
 
-        let R_bytes = (&r * &constants::ED25519_BASEPOINT_TABLE)
+        let R_bytes = (&r * constants::ED25519_BASEPOINT_TABLE)
             .compress()
             .to_bytes();
 
