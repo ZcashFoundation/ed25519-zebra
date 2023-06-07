@@ -13,7 +13,9 @@ mod error;
 mod signing_key;
 mod verification_key;
 
+// Allows importing traits used by `Signature`.
+pub use ed25519;
+pub use ed25519::Signature;
 pub use error::Error;
 pub use signing_key::SigningKey;
 pub use verification_key::{VerificationKey, VerificationKeyBytes};
-pub use ed25519::Signature;

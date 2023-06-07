@@ -2,16 +2,16 @@
 
 Entries are listed in reverse chronological order.
 
-# 3.2.0
+# 4.0.0
 
-* Updates `curve25519-dalek` to `4.0.0-rc.2`.
-* Updates `sha2` version to `0.10` and `curve25519-dalek` version to `4.0.0-pre.5`.
+* `Signature` is now an alias for `ed25519::Signature`
+  * `impl From<Signature> for [u8; 64]` no longer exists; use `to_bytes()` instead.
+* `signature::{Signer, Verifier} is now implemented for  `SigningKey` and `VerificationKey`.
+* Updates `sha2` version to `0.10` and `curve25519-dalek` version to `4.0.0-rc.2`.
 * Add DER & PEM support for SigningKeySeed and VerificationKeyBytes (RFC 8410) #46 https://github.com/ZcashFoundation/ed25519-zebra/pull/46
   * This is under the non-default `pem` and `pkcs8` features
-* `Signature` is now an alias for `ed25519::Signature`; `signature::{Signer, Verifier}
-  is now implemented for  `SigningKey` and `VerificationKey`.
 
-MSRV increased to `1.60.0`.
+MSRV increased to `1.65.0`.
 
 # 3.1.0
 
