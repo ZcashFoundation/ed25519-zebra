@@ -4,10 +4,8 @@
 //! so these are basic sanity checks, rather than the more detailed test vectors
 //! in consensus.rs.
 
-use bincode;
 use ed25519::Signature;
 use ed25519_zebra::*;
-use hex;
 
 fn rfc8032_test_case(sk_bytes: Vec<u8>, pk_bytes: Vec<u8>, sig_bytes: Vec<u8>, msg: Vec<u8>) {
     let sk: SigningKey = bincode::deserialize(&sk_bytes).expect("sk should deserialize");

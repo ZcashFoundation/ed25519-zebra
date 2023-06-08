@@ -181,12 +181,10 @@ pub fn order(point: EdwardsPoint) -> &'static str {
         } else {
             "8"
         }
+    } else if point.is_torsion_free() {
+        "p"
     } else {
-        if point.is_torsion_free() {
-            "p"
-        } else {
-            "8p"
-        }
+        "8p"
     }
 }
 
