@@ -23,7 +23,7 @@ individual verification consistent with batch verification and are
 backwards-compatible with all existing Ed25519 signatures. Any non-Zcash users
 should use the ZIP215 rules:
 ```toml
-ed25519-zebra = "3"
+ed25519-zebra = "4"
 ```
 
 ## ZIP 215 and changes to Zcash-flavored Ed25519
@@ -41,7 +41,7 @@ validation criteria.  Users (like Zebra or zcashd) who need to handle the
 upgrade can use both versions simultaneously using cargo renaming, e.g.,
 ```toml
 ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
-ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "3" }
+ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "4" }
 ```
 
 ## Example
