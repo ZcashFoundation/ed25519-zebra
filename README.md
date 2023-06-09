@@ -29,9 +29,9 @@ ed25519-zebra = "4"
 ## ZIP 215 and changes to Zcash-flavored Ed25519
 
 [Zcash Improvement Proposal 215][ZIP215] changes validation criteria for
-Ed25519 signatures in Zcash after its activation (currently scheduled for the
-Canopy network upgrade at block height 1046400). These changes remove the
-dependence on validation rules inherited from a specific point release of
+Ed25519 signatures in Zcash after its activation (which occurred in the
+Canopy network upgrade at mainnet block height 1046400). These changes remove
+the dependence on validation rules inherited from a specific point release of
 `libsodium` and make individual verification consistent with batch
 verification. More details and motivation are available in the text of [ZIP215].
 
