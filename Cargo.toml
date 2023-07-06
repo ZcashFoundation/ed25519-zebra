@@ -4,7 +4,7 @@ name = "ed25519-zebra"
 # - update CHANGELOG.md
 version = "4.0.1"
 rust-version = "1.65.0"
-authors = ["Henry de Valence <hdevalence@hdevalence.ca>"]
+authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "Zcash Foundation <zebra@zfnd.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
 repository = "https://github.com/ZcashFoundation/ed25519-zebra"
