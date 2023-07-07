@@ -2,9 +2,9 @@
 name = "ed25519-zebra"
 # Before publishing:
 # - update CHANGELOG.md
-version = "4.0.0"
+version = "4.0.1"
 rust-version = "1.65.0"
-authors = ["Henry de Valence <hdevalence@hdevalence.ca>"]
+authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "Zcash Foundation <zebra@zfnd.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
 repository = "https://github.com/ZcashFoundation/ed25519-zebra"
@@ -16,7 +16,7 @@ features = ["nightly"]
 
 [dependencies]
 # "digest" is exempt from SemVer, so we should always use a specific version
-curve25519-dalek = { version = "=4.0.0-rc.2", default-features = false, features = ["alloc", "digest", "zeroize", "precomputed-tables"] }
+curve25519-dalek = { version = "=4.0.0-rc.3", default-features = false, features = ["alloc", "digest", "zeroize", "precomputed-tables"] }
 der = { version = "0.7.1", optional = true }
 ed25519 = { version = "2.2.0", default-features = false }
 hashbrown = "0.14.0"

@@ -2,6 +2,11 @@
 
 Entries are listed in reverse chronological order.
 
+# 4.0.1
+
+* Fix no-std build with serde activated (#87)
+* Update `curve25519-dalek` to `4.0.0-rc.3`
+
 # 4.0.0
 
 * `Signature` is now an alias for `ed25519::Signature`

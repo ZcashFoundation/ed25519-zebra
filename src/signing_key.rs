@@ -112,7 +112,7 @@ impl From<[u8; 32]> for SigningKey {
             scalar_bytes[0] &= 248;
             scalar_bytes[31] &= 127;
             scalar_bytes[31] |= 64;
-            Scalar::from_bits(scalar_bytes)
+            Scalar::from_bytes_mod_order(scalar_bytes)
         };
 
         // Extract and cache the high half.
