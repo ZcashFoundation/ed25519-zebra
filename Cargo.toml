@@ -15,8 +15,10 @@ resolver = "2"
 features = ["nightly"]
 
 [dependencies]
-# "digest" is exempt from SemVer, so we should always use a specific version
-curve25519-dalek = { version = "=4.0.0-rc.3", default-features = false, features = ["alloc", "digest", "zeroize", "precomputed-tables"] }
+# "digest" is exempt from SemVer but breaking changes will bump minor versions
+# (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#public-api-semver-exemptions)
+# so only allow patch changes
+curve25519-dalek = { version = "~4.0", default-features = false, features = ["alloc", "digest", "zeroize", "precomputed-tables"] }
 der = { version = "0.7.1", optional = true }
 ed25519 = { version = "2.2.0", default-features = false }
 hashbrown = "0.14.0"
