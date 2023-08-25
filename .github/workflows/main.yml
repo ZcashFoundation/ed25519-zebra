@@ -12,7 +12,7 @@ jobs:
     name: test on MSRV
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3.5.3
+    - uses: actions/checkout@v3.6.0
     - uses: actions-rs/toolchain@v1.0.7
       with:
         # When toolchain is not specified, it uses rust-toolchain, which is the MSRV
@@ -42,7 +42,7 @@ jobs:
     name: build with no_std
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3.5.3
+    - uses: actions/checkout@v3.6.0
     - uses: actions-rs/toolchain@v1.0.7
       with:
         toolchain: stable
