@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+# 4.0.3
+
+* Update `curve25519-dalek` to `4.1.0`
+
 # 4.0.2
 
 * Update `curve25519-dalek` to `4.0.0`
