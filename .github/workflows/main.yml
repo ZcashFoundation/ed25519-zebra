@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.0.0
-    - uses: dtolnay/rust-toolchain@1.65.0
+    - uses: dtolnay/rust-toolchain@1.80.0
     - run: cargo build --all-features
 
   test_nightly:
