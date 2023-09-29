@@ -1,8 +1,6 @@
 [package]
 name = "ed25519-zebra"
-# Before publishing:
-# - update CHANGELOG.md
-# - ensure MSRV below (rust-version) and in main.yml are the same
+# Refer to DEVELOPERS.md for guidance on making new releases.
 version = "4.0.3"
 rust-version = "1.65.0"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "Zcash Foundation <zebra@zfnd.org>"]

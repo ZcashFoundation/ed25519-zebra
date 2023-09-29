@@ -74,6 +74,11 @@ assert!(
 );
 ```
 
+## Developers guide
+
+
+See [DEVELOPERS.md](DEVELOPERS.md).
+
 ## License
 
 ed25519-zebra is distributed under the terms of both the MIT license
