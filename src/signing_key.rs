@@ -13,6 +13,7 @@ use core::convert::TryInto;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
+use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
 
 pub use ed25519::{
@@ -43,7 +44,7 @@ use crate::{VerificationKey, VerificationKeyBytes};
 /// An Ed25519 signing key.
 ///
 /// This is also called a secret key by other implementations.
-#[derive(PartialEq, Copy, Clone, Zeroize)]
+#[derive(Copy, Clone, Zeroize)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
@@ -136,6 +137,20 @@ impl From<[u8; 32]> for SigningKey {
         }
     }
 }
+
+impl ConstantTimeEq for SigningKey {
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
+        self.seed.ct_eq(&other.seed)
+    }
+}
+
+impl PartialEq for SigningKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl Eq for SigningKey {}
 
 #[cfg(feature = "pkcs8")]
 impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {

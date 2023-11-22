@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+# 4.0.4 (Unreleased)
+
+* Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey`.
+
 # 4.0.3
 
 * Update `curve25519-dalek` to `4.1.0`
