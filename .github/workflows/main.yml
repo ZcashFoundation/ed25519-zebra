@@ -22,6 +22,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4.1.1
     - uses: dtolnay/rust-toolchain@nightly
+    # Update dependencies since we commit the lockfile
+    - run: cargo update --verbose
     - run: cargo test --all-features
 
   build_no_std:
