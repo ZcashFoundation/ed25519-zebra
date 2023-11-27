@@ -27,6 +27,7 @@ pkcs8 = { version = "0.10.1", optional = true, features = ["alloc", "pem"] }
 rand_core = "0.6"
 serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
 sha2 = { version = "0.10", default-features = false }
+subtle = { version = "2.5.0", default-features = false }
 zeroize = { version = "1.5", features = [ "zeroize_derive" ] }
 
 [dev-dependencies]
@@ -43,7 +44,7 @@ default = ["serde", "std"]
 pem = ["der", "ed25519/pem"]
 pkcs8 = ["dep:pkcs8"]
 serde = ["dep:serde", "ed25519/serde"]
-std = ["ed25519/std"]
+std = ["ed25519/std", "subtle/std"]
 
 [[test]]
 name = "rfc8032"

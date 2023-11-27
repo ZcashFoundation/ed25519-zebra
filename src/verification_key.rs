@@ -113,7 +113,7 @@ impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
 ///   Curve25519, and non-canonical encodings MUST be accepted;
 ///
 /// [ps]: https://zips.z.cash/protocol/protocol.pdf#concreteed25519
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(try_from = "VerificationKeyBytes"))]
 #[cfg_attr(feature = "serde", serde(into = "VerificationKeyBytes"))]
