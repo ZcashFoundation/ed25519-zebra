@@ -12,7 +12,7 @@ jobs:
     name: build on MSRV
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.1.4
     - uses: dtolnay/rust-toolchain@1.65.0
     - run: cargo build --all-features
 
@@ -20,7 +20,7 @@ jobs:
     name: test on nightly
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.1.4
     - uses: dtolnay/rust-toolchain@nightly
     # Update dependencies since we commit the lockfile
     - run: cargo update --verbose
@@ -30,7 +30,7 @@ jobs:
     name: build with no_std
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.1.4
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: stable
