@@ -21,7 +21,7 @@ features = ["nightly"]
 curve25519-dalek = { version = ">= 4.0, < 4.2", default-features = false, features = ["alloc", "digest", "zeroize", "precomputed-tables"] }
 der = { version = "0.7.9", optional = true }
 ed25519 = { version = "2.2.3", default-features = false }
-hashbrown = "0.14.3"
+hashbrown = "0.14.5"
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 pkcs8 = { version = "0.10.1", optional = true, features = ["alloc", "pem"] }
 rand_core = "0.6"
