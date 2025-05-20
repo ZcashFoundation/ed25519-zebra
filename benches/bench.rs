@@ -39,6 +39,7 @@ fn bench_batch_verify(c: &mut Criterion) {
                 })
             },
         );
+        #[cfg(feature = "alloc")]
         group.bench_with_input(
             BenchmarkId::new("Signatures with Distinct Pubkeys", n),
             &sigs,
@@ -52,7 +53,9 @@ fn bench_batch_verify(c: &mut Criterion) {
                 })
             },
         );
+        #[cfg(feature = "alloc")]
         let sigs = sigs_with_same_pubkey().take(*n).collect::<Vec<_>>();
+        #[cfg(feature = "alloc")]
         group.bench_with_input(
             BenchmarkId::new("Signatures with the Same Pubkey", n),
             &sigs,

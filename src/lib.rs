@@ -4,10 +4,10 @@
 
 //! Docs require the `nightly` feature until RFC 1990 lands.
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
-#[cfg(feature = "std")]
-extern crate std;
 
+#[cfg(feature = "alloc")]
 pub mod batch;
 mod error;
 mod signing_key;
