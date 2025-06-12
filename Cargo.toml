@@ -32,7 +32,7 @@ zeroize = { version = "1.8", default-features = false, features = [ "derive" ] }
 [dev-dependencies]
 rand = "0.8"
 bincode = "1"
-criterion = "0.5"
+criterion = "0.6"
 ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
 color-eyre = "0.6"
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
