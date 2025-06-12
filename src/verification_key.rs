@@ -51,7 +51,7 @@ pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         fmt.debug_tuple("VerificationKeyBytes")
-            .field(&hex::encode(self.0))
+            .field(&self.0)
             .finish()
     }
 }

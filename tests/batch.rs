@@ -1,3 +1,5 @@
+#![cfg(feature = "alloc")]
+
 use rand::thread_rng;
 
 use ed25519_zebra::*;

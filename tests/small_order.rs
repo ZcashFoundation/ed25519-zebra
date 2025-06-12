@@ -81,6 +81,7 @@ fn conformance() -> Result<(), Report> {
     Ok(())
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 fn individual_matches_batch_verification() -> Result<(), Report> {
     use core::convert::TryFrom;
