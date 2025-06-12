@@ -45,7 +45,7 @@ alloc = [
     "curve25519-dalek/alloc",
     "ed25519/alloc",
     "hex/alloc",
-    "pkcs8/alloc",
+    "pkcs8?/alloc",
     "zeroize/alloc",
 ]
 pem = ["der", "ed25519/pem"]
