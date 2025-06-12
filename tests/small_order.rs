@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use color_eyre::Report;
 use curve25519_dalek::{
     constants::EIGHT_TORSION, digest::Update, edwards::CompressedEdwardsY, scalar::Scalar,

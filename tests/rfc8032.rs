@@ -3,6 +3,7 @@
 //! Note that RFC 8032 does not actually specify validation criteria for Ed25519,
 //! so these are basic sanity checks, rather than the more detailed test vectors
 //! in consensus.rs.
+#![cfg(feature = "serde")]
 
 use ed25519::Signature;
 use ed25519_zebra::*;
