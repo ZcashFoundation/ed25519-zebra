@@ -7,8 +7,10 @@ const ALGORITHM_ID: AlgorithmIdentifierRef = AlgorithmIdentifierRef {
 };
 
 use crate::Error;
+#[cfg(all(feature = "pem", feature = "pkcs8"))]
+use alloc::string::String;
 use core::convert::TryFrom;
-#[cfg(feature = "pem")]
+#[cfg(feature = "pkcs8")]
 use core::convert::TryInto;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
 use rand_core::{CryptoRng, RngCore};
@@ -16,13 +18,12 @@ use sha2::{Digest, Sha512};
 use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
 
-pub use ed25519::{
-    signature::{Signer, Verifier},
-    ComponentBytes, Error as Ed25519Error, Signature,
-};
+use ed25519::{signature::Signer, Signature};
 
+#[cfg(feature = "pkcs8")]
+use ed25519::KeypairBytes;
 #[cfg(feature = "pem")]
-pub use ed25519::{KeypairBytes, PublicKeyBytes};
+use ed25519::PublicKeyBytes;
 
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use der::pem::LineEnding;

@@ -1,3 +1,5 @@
+#![cfg(feature = "serde")]
+
 use core::convert::TryFrom;
 
 use rand::thread_rng;

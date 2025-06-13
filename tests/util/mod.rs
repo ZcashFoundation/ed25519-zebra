@@ -1,11 +1,13 @@
 // functions are used in small_order but not recognized as such?
 #![allow(dead_code)]
+#![cfg(feature = "std")]
 
 use color_eyre::{eyre::eyre, Report};
 use curve25519_dalek::edwards::{CompressedEdwardsY, EdwardsPoint};
 use ed25519_zebra as ed25519_zebra_zip215;
 
 use core::convert::TryFrom;
+
 pub struct TestCase {
     pub vk_bytes: [u8; 32],
     pub sig_bytes: [u8; 64],
