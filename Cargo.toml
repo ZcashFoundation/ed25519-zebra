@@ -48,8 +48,8 @@ alloc = [
     "pkcs8?/alloc",
     "zeroize/alloc",
 ]
-pem = ["der", "ed25519/pem"]
-pkcs8 = ["dep:pkcs8"]
+pem = ["pkcs8", "dep:der", "ed25519/pem"]
+pkcs8 = ["dep:pkcs8", "ed25519/pkcs8", "alloc"]
 serde = ["dep:serde", "ed25519/serde"]
 std = ["alloc", "ed25519/std", "subtle/std"]
 

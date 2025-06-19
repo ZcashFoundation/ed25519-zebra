@@ -8,10 +8,7 @@ use curve25519_dalek::{
 use sha2::Sha512;
 use zeroize::DefaultIsZeroes;
 
-pub use ed25519::{
-    signature::{Signer, Verifier},
-    Signature,
-};
+use ed25519::{signature::Verifier, Signature};
 
 #[cfg(feature = "pkcs8")]
 use pkcs8::der::asn1::BitStringRef;
