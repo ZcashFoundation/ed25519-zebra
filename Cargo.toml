@@ -19,7 +19,7 @@ features = ["nightly"]
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#public-api-semver-exemptions)
 # so only allow patch changes inside known compatible range
 curve25519-dalek = { version = ">= 4.0, < 4.2", default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }
-der = { version = "0.7.9", optional = true }
+der = { version = "0.7.10", optional = true }
 ed25519 = { version = "2.2.3", default-features = false }
 hashbrown = { version = "0.14.5", optional = true }
 pkcs8 = { version = "0.10.1", optional = true, features = ["pem"] }
