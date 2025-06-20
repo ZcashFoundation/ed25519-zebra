@@ -2,9 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
-# 4.0.4 (Unreleased)
+# 4.0.4
 
-* Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey`.
+* Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey` (#102)
+* Add `alloc` feature by @nazar-pc in (#161, #174)
 
 # 4.0.3
 

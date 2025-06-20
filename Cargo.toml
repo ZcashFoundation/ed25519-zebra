@@ -1,7 +1,7 @@
 [package]
 name = "ed25519-zebra"
 # Refer to DEVELOPERS.md for guidance on making new releases.
-version = "4.0.3"
+version = "4.0.4"
 rust-version = "1.65.0"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "Zcash Foundation <zebra@zfnd.org>"]
 license = "MIT OR Apache-2.0"
@@ -21,7 +21,7 @@ features = ["nightly"]
 curve25519-dalek = { version = ">= 4.0, < 4.2", default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }
 der = { version = "0.7.9", optional = true }
 ed25519 = { version = "2.2.3", default-features = false }
-hashbrown = { version = "0.14.5", optional = true }
+hashbrown = { version = "0.15", optional = true }
 pkcs8 = { version = "0.10.1", optional = true, features = ["pem"] }
 rand_core = "0.6"
 serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
@@ -32,11 +32,11 @@ zeroize = { version = "1.8", default-features = false, features = ["derive"] }
 [dev-dependencies]
 rand = "0.8"
 bincode = "1"
-criterion = "0.5"
+criterion = "0.6"
 ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
 color-eyre = "0.6"
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
-once_cell = "1.19"
+once_cell = "1.21"
 
 [features]
 nightly = []

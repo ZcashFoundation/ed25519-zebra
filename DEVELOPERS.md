@@ -1,5 +1,6 @@
 ## Release Checklist
 
+- Run `cargo semver-checks` to see if a major version bump is required
 - Bump version in Cargo.toml
   - If major version was bumped, update README.md
 - Update CHANGELOG.md
