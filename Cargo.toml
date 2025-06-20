@@ -9,6 +9,15 @@ edition = "2018"
 repository = "https://github.com/ZcashFoundation/ed25519-zebra"
 description = "Zcash-flavored Ed25519 for use in Zebra."
 resolver = "2"
+include = [
+    "/src",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
+    "/tests",
+    "/benches",
+]
 
 [package.metadata.docs.rs]
 features = ["nightly"]
