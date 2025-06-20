@@ -11,8 +11,10 @@ description = "Zcash-flavored Ed25519 for use in Zebra."
 resolver = "2"
 include = [
     "/src",
-    "/*.md",
-    "/LICENSE-*",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
     "/tests",
     "/benches",
 ]
