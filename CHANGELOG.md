@@ -2,9 +2,17 @@
 
 Entries are listed in reverse chronological order.
 
-# 4.0.4 (Unreleased)
+# 4.0.4
 
-* Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey`.
+* Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey` (#102)
+* Add `alloc` feature by @nazar-pc in (#161, #174)
+
+Note: to use Rust older than `1.85`, you will need to downgrade the `base64ct`
+crate:
+
+```
+cargo update base64ct --precise 1.6.0
+```
 
 # 4.0.3
 
