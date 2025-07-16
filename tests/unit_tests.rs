@@ -18,10 +18,10 @@ fn parsing() {
     let pkb_array: [u8; 32] = pkb.into();
     let sig_array: [u8; 64] = sig.into();
 
-    let sk2 = SigningKey::try_from(sk_array).unwrap();
+    let sk2 = SigningKey::from(sk_array);
     let pk2 = VerificationKey::try_from(pk_array).unwrap();
-    let pkb2 = VerificationKeyBytes::try_from(pkb_array).unwrap();
-    let sig2 = Signature::try_from(sig_array).unwrap();
+    let pkb2 = VerificationKeyBytes::from(pkb_array);
+    let sig2 = Signature::from(sig_array);
 
     assert_eq!(sk, sk2);
     assert_eq!(pk, pk2);
