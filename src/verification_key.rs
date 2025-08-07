@@ -21,6 +21,9 @@ use pkcs8::{Document, ObjectIdentifier};
 
 use crate::Error;
 
+/// The length of an ed25519 `VerificationKey`, in bytes.
+pub const VERIFICATION_KEY_LENGTH: usize = 32;
+
 /// A refinement type for `[u8; 32]` indicating that the bytes represent an
 /// encoding of an Ed25519 verification key.
 ///
@@ -43,7 +46,7 @@ use crate::Error;
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct VerificationKeyBytes(pub(crate) [u8; 32]);
+pub struct VerificationKeyBytes(pub(crate) [u8; VERIFICATION_KEY_LENGTH]);
 
 impl core::fmt::Debug for VerificationKeyBytes {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
