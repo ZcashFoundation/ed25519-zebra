@@ -42,6 +42,17 @@ use pkcs8::der::pem::PemLabel;
 
 use crate::{VerificationKey, VerificationKeyBytes};
 
+/// The length of a ed25519 `SecretKey`, in bytes.
+pub const SECRET_KEY_LENGTH: usize = 32;
+
+/// ed25519 secret key as defined in [RFC8032 § 5.1.5]:
+///
+/// > The private key is 32 octets (256 bits, corresponding to b) of
+/// > cryptographically secure random data.
+///
+/// [RFC8032 § 5.1.5]: https://www.rfc-editor.org/rfc/rfc8032#section-5.1.5
+pub type SecretKey = [u8; SECRET_KEY_LENGTH];
+
 /// An Ed25519 signing key.
 ///
 /// This is also called a secret key by other implementations.
@@ -50,7 +61,7 @@ use crate::{VerificationKey, VerificationKeyBytes};
 #[cfg_attr(feature = "serde", serde(from = "SerdeHelper"))]
 #[cfg_attr(feature = "serde", serde(into = "SerdeHelper"))]
 pub struct SigningKey {
-    seed: [u8; 32],
+    seed: SecretKey,
     s: Scalar,
     prefix: [u8; 32],
     vk: VerificationKey,
@@ -82,8 +93,8 @@ impl AsRef<[u8]> for SigningKey {
     }
 }
 
-impl From<SigningKey> for [u8; 32] {
-    fn from(sk: SigningKey) -> [u8; 32] {
+impl From<SigningKey> for SecretKey {
+    fn from(sk: SigningKey) -> SecretKey {
         sk.seed
     }
 }
@@ -101,7 +112,7 @@ impl TryFrom<&[u8]> for SigningKey {
     }
 }
 
-impl From<[u8; 32]> for SigningKey {
+impl From<SecretKey> for SigningKey {
     #[allow(non_snake_case)]
     fn from(seed: [u8; 32]) -> SigningKey {
         // Expand the seed to a 64-byte array with SHA512.
@@ -289,11 +300,35 @@ impl From<SigningKey> for SerdeHelper {
 }
 
 impl SigningKey {
+    /// Construct a [`SigningKey`] from a [`SecretKey`]
+    ///
+    #[inline]
+    pub fn from_bytes(secret_key: &SecretKey) -> Self {
+        (*secret_key).into()
+    }
+
+    /// Convert this [`SigningKey`] into a [`SecretKey`]
+    #[inline]
+    pub fn to_bytes(&self) -> SecretKey {
+        (*self).into()
+    }
+
+    /// Convert this [`SigningKey`] into a [`SecretKey`] reference
+    #[inline]
+    pub fn as_bytes(&self) -> &SecretKey {
+        &self.seed
+    }
+
     /// Generate a new signing key.
     pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> SigningKey {
         let mut bytes = [0u8; 32];
         rng.fill_bytes(&mut bytes[..]);
         bytes.into()
+    }
+
+    /// Get the [`VerificationKey`] for this [`SigningKey`].
+    pub fn verification_key(&self) -> VerificationKey {
+        self.into()
     }
 
     /// Create a signature on `msg` using this key.
