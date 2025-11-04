@@ -2,6 +2,10 @@
 
 Entries are listed in reverse chronological order.
 
+# 4.1.1
+
+* Bump `hashbrown` from 0.15 to 0.16.
+
 # 4.1.0
 
 * Implement `PartialEq` and `Eq` in `SigningKey` and `VerificationKey` (#102)
