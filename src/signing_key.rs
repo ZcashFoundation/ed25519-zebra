@@ -121,7 +121,7 @@ impl From<SecretKey> for SigningKey {
         // Convert the low half to a scalar with Ed25519 "clamping"
         let s = {
             let mut scalar_bytes = [0u8; 32];
-            scalar_bytes[..].copy_from_slice(&h.as_slice()[0..32]);
+            scalar_bytes[..].copy_from_slice(&h[0..32]);
             scalar_bytes[0] &= 248;
             scalar_bytes[31] &= 127;
             scalar_bytes[31] |= 64;
@@ -131,7 +131,7 @@ impl From<SecretKey> for SigningKey {
         // Extract and cache the high half.
         let prefix = {
             let mut prefix = [0u8; 32];
-            prefix[..].copy_from_slice(&h.as_slice()[32..64]);
+            prefix[..].copy_from_slice(&h[32..64]);
             prefix
         };
 
