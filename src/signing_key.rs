@@ -297,20 +297,20 @@ impl From<SigningKey> for SerdeHelper {
 }
 
 impl SigningKey {
-    /// Construct a [`SigningKey`] from a [`SecretKey`]
+    /// Construct a [`SigningKey`] from a `SecretKey`
     ///
     #[inline]
     pub fn from_bytes(secret_key: &SecretKey) -> Self {
         (*secret_key).into()
     }
 
-    /// Convert this [`SigningKey`] into a [`SecretKey`]
+    /// Convert this [`SigningKey`] into a `SecretKey`
     #[inline]
     pub fn to_bytes(&self) -> SecretKey {
         (*self).into()
     }
 
-    /// Convert this [`SigningKey`] into a [`SecretKey`] reference
+    /// Convert this [`SigningKey`] into a `SecretKey` reference
     #[inline]
     pub fn as_bytes(&self) -> &SecretKey {
         &self.seed
