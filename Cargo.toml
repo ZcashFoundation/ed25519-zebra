@@ -1,8 +1,8 @@
 [package]
 name = "ed25519-zebra"
 # Refer to DEVELOPERS.md for guidance on making new releases.
-version = "4.1.1"
-rust-version = "1.65.0"
+version = "4.2.0"
+rust-version = "1.85.0"
 authors = ["Henry de Valence <hdevalence@hdevalence.ca>", "Zcash Foundation <zebra@zfnd.org>"]
 license = "MIT OR Apache-2.0"
 edition = "2018"

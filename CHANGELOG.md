@@ -2,8 +2,9 @@
 
 Entries are listed in reverse chronological order.
 
-# 4.1.1
+# 4.2.0
 
+* Bump MSRV from 1.65 to 1.85.
 * Bump `hashbrown` from 0.15 to 0.16.
 
 # 4.1.0
