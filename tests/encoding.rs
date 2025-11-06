@@ -2,8 +2,6 @@
 use der::pem::LineEnding;
 #[cfg(any(feature = "pem", feature = "pkcs8"))]
 use ed25519_zebra::*;
-#[cfg(any(feature = "pem", feature = "pkcs8"))]
-use hex;
 #[cfg(feature = "pkcs8")]
 pub use pkcs8::{
     spki::AlgorithmIdentifierRef, EncodePrivateKey, EncodePublicKey, ObjectIdentifier,

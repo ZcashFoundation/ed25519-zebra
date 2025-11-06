@@ -1,9 +1,6 @@
 #[cfg(any(feature = "pem", feature = "pkcs8"))]
 use ed25519_zebra::*;
 
-#[cfg(any(feature = "pem", feature = "pkcs8"))]
-use hex;
-
 #[cfg(feature = "pkcs8")]
 use pkcs8::{DecodePrivateKey, DecodePublicKey};
 

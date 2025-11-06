@@ -121,7 +121,7 @@ impl From<SecretKey> for SigningKey {
         // Convert the low half to a scalar with Ed25519 "clamping"
         let s = {
             let mut scalar_bytes = [0u8; 32];
-            scalar_bytes[..].copy_from_slice(&h.as_slice()[0..32]);
+            scalar_bytes[..].copy_from_slice(&h[0..32]);
             scalar_bytes[0] &= 248;
             scalar_bytes[31] &= 127;
             scalar_bytes[31] |= 64;
@@ -131,7 +131,7 @@ impl From<SecretKey> for SigningKey {
         // Extract and cache the high half.
         let prefix = {
             let mut prefix = [0u8; 32];
-            prefix[..].copy_from_slice(&h.as_slice()[32..64]);
+            prefix[..].copy_from_slice(&h[32..64]);
             prefix
         };
 
@@ -213,10 +213,7 @@ impl TryFrom<&KeypairBytes> for SigningKey {
                 VerificationKey::from_public_key_der(public_bytes.as_ref())
                     .map_err(|_| pkcs8::Error::KeyMalformed)?;
 
-            if VerificationKey::try_from(&signing_key.unwrap())
-                .unwrap()
-                .A_bytes
-                != expected_verifying_key.into()
+            if VerificationKey::from(&signing_key.unwrap()).A_bytes != expected_verifying_key.into()
             {
                 return Err(pkcs8::Error::KeyMalformed);
             }
@@ -238,7 +235,7 @@ impl From<&SigningKey> for KeypairBytes {
     fn from(signing_key: &SigningKey) -> KeypairBytes {
         KeypairBytes {
             secret_key: signing_key.s.to_bytes(),
-            public_key: Some(PublicKeyBytes(signing_key.vk.try_into().unwrap())),
+            public_key: Some(PublicKeyBytes(signing_key.vk.into())),
         }
     }
 }
@@ -270,7 +267,7 @@ impl DecodePrivateKey for SigningKey {
     /// key.
     fn from_pkcs8_der(bytes: &[u8]) -> pkcs8::Result<Self> {
         let keypair = KeypairBytes::from_pkcs8_der(bytes).unwrap();
-        let sk = SigningKey::try_from(keypair.secret_key).unwrap();
+        let sk = SigningKey::from(keypair.secret_key);
         match keypair.public_key {
             Some(vk2) => {
                 if sk.vk.A_bytes.0 == vk2.to_bytes() {
@@ -300,20 +297,20 @@ impl From<SigningKey> for SerdeHelper {
 }
 
 impl SigningKey {
-    /// Construct a [`SigningKey`] from a [`SecretKey`]
+    /// Construct a [`SigningKey`] from a `SecretKey`
     ///
     #[inline]
     pub fn from_bytes(secret_key: &SecretKey) -> Self {
         (*secret_key).into()
     }
 
-    /// Convert this [`SigningKey`] into a [`SecretKey`]
+    /// Convert this [`SigningKey`] into a `SecretKey`
     #[inline]
     pub fn to_bytes(&self) -> SecretKey {
         (*self).into()
     }
 
-    /// Convert this [`SigningKey`] into a [`SecretKey`] reference
+    /// Convert this [`SigningKey`] into a `SecretKey` reference
     #[inline]
     pub fn as_bytes(&self) -> &SecretKey {
         &self.seed
