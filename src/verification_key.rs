@@ -256,6 +256,65 @@ impl VerificationKey {
         self.verify_prehashed(signature, k)
     }
 
+    /// Verify a signature using the CHES25 half-size scalar optimization.
+    ///
+    /// This implements the algorithm from "Accelerating EdDSA Signature Verification
+    /// with Faster Scalar Size Halving" (TCHES 2025).
+    ///
+    /// The standard verification equation sB = R + hA is transformed to:
+    /// τsB = τR + ρA where ρ ≡ τh (mod ℓ)
+    ///
+    /// Both ρ and τ are approximately half the size of h, enabling faster computation.
+    pub fn verify_ches25(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
+        // Compute the hash scalar h (called k in the standard implementation)
+        let h = Scalar::from_hash(
+            Sha512::default()
+                .chain(&signature.r_bytes()[..])
+                .chain(&self.A_bytes.0[..])
+                .chain(msg),
+        );
+
+        // Generate half-size scalars ρ and τ such that ρ ≡ τh (mod ℓ)
+        let (rho, tau) = crate::ches25::generate_half_size_scalars(&h);
+
+        // Extract s from the signature
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
+            .ok_or(Error::InvalidSignature)?;
+
+        // Decode R from the signature
+        let R = CompressedEdwardsY(*signature.r_bytes())
+            .decompress()
+            .ok_or(Error::InvalidSignature)?;
+
+        // Standard verification checks: sB = R + hA
+        // Transformed verification: τsB = τR + ρA
+        //
+        // We verify: [8]τsB = [8](τR + ρA)
+        // Which is: [8]τR = [8](τsB - ρA)
+        // Or equivalently: 0 = [8](τR - (τsB - ρA))
+
+        // Compute τs
+        let tau_s = tau * s;
+
+        // Compute τR
+        let tau_R = tau * R;
+
+        // Get the public key point A
+        // We have minus_A stored, so A = -minus_A
+        let A = -self.minus_A;
+
+        // Compute R' = τsB - ρA
+        // Using the double scalar multiplication for efficiency
+        let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&(-rho), &A, &tau_s);
+
+        // Check if [8](τR - R') = 0
+        if (tau_R - R_prime).mul_by_cofactor().is_identity() {
+            Ok(())
+        } else {
+            Err(Error::InvalidSignature)
+        }
+    }
+
     /// Verify a signature with a prehashed `k` value. Note that this is not the
     /// same as "prehashing" in RFC8032.
     #[allow(non_snake_case)]
@@ -279,6 +338,84 @@ impl VerificationKey {
             Ok(())
         } else {
             Err(Error::InvalidSignature)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SigningKey;
+
+    #[test]
+    fn test_verify_ches25_correctness() {
+        use rand::thread_rng;
+
+        // Generate a random signing key
+        let mut rng = thread_rng();
+        let signing_key = SigningKey::new(&mut rng);
+
+        // Get the verification key
+        let verification_key = VerificationKey::from(&signing_key);
+
+        // Create a test message
+        let msg = b"Test message for CHES25 verification";
+
+        // Sign the message
+        let signature = signing_key.sign(msg);
+
+        // Verify with standard method
+        let result_standard = verification_key.verify(&signature, msg);
+        assert!(result_standard.is_ok(), "Standard verification should succeed");
+
+        // Verify with CHES25 method
+        let result_ches25 = verification_key.verify_ches25(&signature, msg);
+        assert!(result_ches25.is_ok(), "CHES25 verification should succeed");
+    }
+
+    #[test]
+    fn test_verify_ches25_invalid_signature() {
+        use rand::thread_rng;
+
+        let mut rng = thread_rng();
+        let signing_key = SigningKey::new(&mut rng);
+        let verification_key = VerificationKey::from(&signing_key);
+
+        let msg = b"Original message";
+        let signature = signing_key.sign(msg);
+
+        // Try to verify with different message
+        let wrong_msg = b"Different message";
+
+        let result_standard = verification_key.verify(&signature, wrong_msg);
+        let result_ches25 = verification_key.verify_ches25(&signature, wrong_msg);
+
+        // Both should fail
+        assert!(result_standard.is_err(), "Standard verification should fail for wrong message");
+        assert!(result_ches25.is_err(), "CHES25 verification should fail for wrong message");
+    }
+
+    #[test]
+    fn test_verify_ches25_multiple_signatures() {
+        use rand::thread_rng;
+
+        let mut rng = thread_rng();
+
+        for i in 0..10 {
+            let signing_key = SigningKey::new(&mut rng);
+            let verification_key = VerificationKey::from(&signing_key);
+
+            let msg = format!("Message number {}", i);
+            let signature = signing_key.sign(msg.as_bytes());
+
+            let result_standard = verification_key.verify(&signature, msg.as_bytes());
+            let result_ches25 = verification_key.verify_ches25(&signature, msg.as_bytes());
+
+            assert_eq!(
+                result_standard.is_ok(),
+                result_ches25.is_ok(),
+                "Both methods should agree on signature {}", i
+            );
         }
     }
 }

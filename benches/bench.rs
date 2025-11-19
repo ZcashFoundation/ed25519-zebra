@@ -73,5 +73,45 @@ fn bench_batch_verify(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_batch_verify);
+fn bench_single_verify(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Single Verification");
+
+    group.bench_function("VerificationKey::verify", |b| {
+        let sk = SigningKey::new(thread_rng());
+        let vk = VerificationKey::from(&sk);
+        let sig = sk.sign(b"");
+        b.iter(|| {
+            let _ = vk.verify(&sig, b"");
+        })
+    });
+
+    group.bench_function("VerificationKey::verify_ches25", |b| {
+        let sk = SigningKey::new(thread_rng());
+        let vk = VerificationKey::from(&sk);
+        let sig = sk.sign(b"");
+        b.iter(|| {
+            let _ = vk.verify_ches25(&sig, b"");
+        })
+    });
+
+    #[cfg(feature = "alloc")]
+    group.bench_function("batch::Verifier single", |b| {
+        let sk = SigningKey::new(thread_rng());
+        let vk_bytes = VerificationKeyBytes::from(&sk);
+        let sig = sk.sign(b"");
+        b.iter(|| {
+            let mut batch = batch::Verifier::new();
+            batch.queue((vk_bytes, sig, b""));
+            let _ = batch.verify(thread_rng());
+        })
+    });
+
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    // bench_batch_verify,
+    bench_single_verify
+);
 criterion_main!(benches);
