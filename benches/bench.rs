@@ -1,8 +1,10 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 use core::convert::TryFrom;
+use curve25519_dalek::scalar::Scalar;
 use ed25519_zebra::*;
-use rand::thread_rng;
+use rand::{thread_rng, RngCore};
+use sha2::{Digest, Sha512};
 
 fn sigs_with_distinct_pubkeys() -> impl Iterator<Item = (VerificationKeyBytes, Signature)> {
     std::iter::repeat_with(|| {
@@ -109,9 +111,35 @@ fn bench_single_verify(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_generate_half_size_scalars(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Half-Size Scalars");
+
+    // Pre-generate random scalars for benchmarking
+    let mut rng = thread_rng();
+    let random_scalars: Vec<Scalar> = (0..100)
+        .map(|_| {
+            let mut random_bytes = [0u8; 64];
+            rng.fill_bytes(&mut random_bytes);
+            Scalar::from_hash(Sha512::new().chain_update(&random_bytes))
+        })
+        .collect();
+
+    group.bench_function("generate_half_size_scalars", |b| {
+        let mut i = 0;
+        b.iter(|| {
+            let h = &random_scalars[i % random_scalars.len()];
+            i += 1;
+            ches25::generate_half_size_scalars(h)
+        })
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
-    // bench_batch_verify,
-    bench_single_verify
+    bench_generate_half_size_scalars,
+    bench_single_verify,
+    bench_batch_verify,
 );
 criterion_main!(benches);

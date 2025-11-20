@@ -9,7 +9,7 @@ extern crate alloc;
 
 #[cfg(feature = "alloc")]
 pub mod batch;
-mod ches25;
+pub mod ches25;
 mod error;
 mod signing_key;
 mod verification_key;
