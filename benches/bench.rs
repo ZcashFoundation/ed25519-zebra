@@ -87,12 +87,12 @@ fn bench_single_verify(c: &mut Criterion) {
         })
     });
 
-    group.bench_function("VerificationKey::verify_ches25", |b| {
+    group.bench_function("VerificationKey::verify_heea", |b| {
         let sk = SigningKey::new(thread_rng());
         let vk = VerificationKey::from(&sk);
         let sig = sk.sign(b"");
         b.iter(|| {
-            let _ = vk.verify_ches25(&sig, b"");
+            let _ = vk.verify_heea(&sig, b"");
         })
     });
 
@@ -129,7 +129,7 @@ fn bench_generate_half_size_scalars(c: &mut Criterion) {
         b.iter(|| {
             let h = &random_scalars[i % random_scalars.len()];
             i += 1;
-            ches25::generate_half_size_scalars(h)
+            heea::generate_half_size_scalars(h)
         })
     });
 

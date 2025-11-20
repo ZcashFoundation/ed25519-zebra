@@ -9,9 +9,10 @@ extern crate alloc;
 
 #[cfg(feature = "alloc")]
 pub mod batch;
-pub mod ches25;
 mod error;
+pub mod heea;
 mod signing_key;
+mod u256;
 mod verification_key;
 
 // Allows importing traits used by `Signature`.
