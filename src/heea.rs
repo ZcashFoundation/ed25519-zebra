@@ -6,19 +6,27 @@
 //! For verification sB = R + hA, we find rho, tau such that rho = tau*h (mod ell)
 
 use curve25519_dalek::scalar::Scalar;
+use ethnum::{I256, U256};
 
-use crate::u256::{L, U256};
+/// Ed25519 group order L = 2^252 + 27742317777372353535851937790883648493
+/// = 0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed
+/// High 128 bits: 0x10000000000000000000000000000000
+/// Low 128 bits:  0x14def9dea2f79cd65812631a5cf5d3ed
+const L: I256 = I256::from_words(
+    0x10000000000000000000000000000000,
+    0x14def9dea2f79cd65812631a5cf5d3ed,
+);
 
 /// Implement curve25519_hEEA_vartime algorithm
 /// Returns (rho, tau) such that rho ≡ tau * v (mod L)
-pub(crate) fn curve25519_heea_vartime(v: &U256) -> (U256, [u64; 2]) {
-    let mut r0 = U256(L);
-    let mut r1 = *v;
-    let mut t0 = [0u64; 2];
-    let mut t1 = [1u64, 0u64];
+pub(crate) fn curve25519_heea_vartime(v: I256) -> (I256, i128) {
+    let mut r0 = L;
+    let mut r1 = v;
+    let mut t0: i128 = 0;
+    let mut t1: i128 = 1;
 
     let mut bl_r0 = 253u32; // bit_length(L) = 253
-    let mut bl_r1 = r1.bit_length();
+    let mut bl_r1 = bit_length_i256(r1);
 
     // Main loop - continue until r1 is approximately half-size (~127 bits)
     loop {
@@ -34,48 +42,33 @@ pub(crate) fn curve25519_heea_vartime(v: &U256) -> (U256, [u64; 2]) {
         let mut r = r0;
         let mut t = t0;
 
-        // Check if signs are the same (MSB of highest limb)
-        let sign_r0 = (r0.0[3] >> 63) != 0;
-        let sign_r1 = (r1.0[3] >> 63) != 0;
+        // Check if signs are the same
+        let sign_r0 = r0 < I256::ZERO;
+        let sign_r1 = r1 < I256::ZERO;
 
         if sign_r0 == sign_r1 {
             // Same sign: subtract
-            r.sub_lshift_4(&r1, s);
-            // sub_lshift_4(&mut r, &r1, s);
-            // For t (only 2 limbs)
-            let t_shifted = if s == 0 {
-                t1
-            } else if s < 64 {
-                [t1[0] << s, (t1[1] << s) | (t1[0] >> (64 - s))]
-            } else if s < 128 {
-                [0, t1[0] << (s - 64)]
+            r = r.wrapping_sub(r1 << s);
+            // For t, handle shift carefully - if s >= 128, result would overflow
+            if s < 128 {
+                t = t.wrapping_sub(t1.wrapping_shl(s));
             } else {
-                [0, 0]
-            };
-            let (d0, b1) = t[0].overflowing_sub(t_shifted[0]);
-            let (d1, _b2) = t[1].overflowing_sub(t_shifted[1]);
-            let (d1, _b3) = d1.overflowing_sub(if b1 { 1 } else { 0 });
-            t = [d0, d1];
+                // Shift is too large, effectively makes t1 << s zero in wrapping arithmetic
+                t = t;
+            }
         } else {
             // Different sign: add
-            r.add_lshift_4(&r1, s);
-            // For t (only 2 limbs)
-            let t_shifted = if s == 0 {
-                t1
-            } else if s < 64 {
-                [t1[0] << s, (t1[1] << s) | (t1[0] >> (64 - s))]
-            } else if s < 128 {
-                [0, t1[0] << (s - 64)]
+            r = r.wrapping_add(r1 << s);
+            // For t, handle shift carefully - if s >= 128, result would overflow
+            if s < 128 {
+                t = t.wrapping_add(t1.wrapping_shl(s));
             } else {
-                [0, 0]
-            };
-            let (sum0, c1) = t[0].overflowing_add(t_shifted[0]);
-            let (sum1, _c2) = t[1].overflowing_add(t_shifted[1]);
-            let (sum1, _c3) = sum1.overflowing_add(if c1 { 1 } else { 0 });
-            t = [sum0, sum1];
+                // Shift is too large, effectively makes t1 << s zero in wrapping arithmetic
+                t = t;
+            }
         }
 
-        let bl_r = r.bit_length();
+        let bl_r = bit_length_i256(r);
 
         if bl_r > bl_r1 {
             // r grew, so keep it in r0
@@ -94,38 +87,61 @@ pub(crate) fn curve25519_heea_vartime(v: &U256) -> (U256, [u64; 2]) {
     }
 }
 
-/// Convert 2 limbs to Scalar (for tau)
-fn limbs2_to_scalar(limbs: &[u64; 2]) -> Scalar {
-    let mut bytes = [0u8; 32];
+/// Compute bit length of I256 (magnitude, not including sign)
+fn bit_length_i256(val: I256) -> u32 {
+    if val == I256::ZERO {
+        return 1;
+    }
 
-    let is_negative = (limbs[1] >> 63) != 0;
-
-    if is_negative {
-        let mut negated = [!limbs[0], !limbs[1]];
-        let mut carry = true;
-        for i in 0..2 {
-            let (sum, c) = negated[i].overflowing_add(if carry { 1 } else { 0 });
-            negated[i] = sum;
-            carry = c;
-        }
-
-        for (i, &limb) in negated.iter().enumerate() {
-            bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
-        }
-        let positive = Scalar::from_bytes_mod_order(bytes);
-
-        let ell = Scalar::from_bytes_mod_order([
-            0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9,
-            0xde, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x10,
-        ]);
-        ell - positive
+    if val < I256::ZERO {
+        // For negative, compute bit length of absolute value
+        let abs_val = val.wrapping_neg();
+        256 - abs_val.leading_zeros()
     } else {
-        for (i, &limb) in limbs.iter().enumerate() {
-            bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb.to_le_bytes());
-        }
+        256 - val.leading_zeros()
+    }
+}
+
+/// Convert I256 to Scalar
+fn i256_to_scalar(val: I256) -> Scalar {
+    if val < I256::ZERO {
+        // For negative numbers, compute absolute value and negate
+        let abs_val = val.wrapping_neg();
+        let bytes = abs_val.to_le_bytes();
+        let positive = Scalar::from_bytes_mod_order(bytes);
+        -positive
+    } else {
+        let bytes = val.to_le_bytes();
         Scalar::from_bytes_mod_order(bytes)
     }
+}
+
+/// Convert i128 to Scalar (for tau)
+fn i128_to_scalar(val: i128) -> Scalar {
+    if val < 0 {
+        // For negative, we want: Scalar representing (ell + val) = ell - |val|
+        // Since val is negative, -val = |val|
+        let abs_val = (-val) as u128;
+        let mut bytes = [0u8; 32];
+        bytes[..16].copy_from_slice(&abs_val.to_le_bytes());
+        let positive_scalar = Scalar::from_bytes_mod_order(bytes);
+        // Return -|val| mod ell, which is ell - |val|
+        -positive_scalar
+    } else {
+        // For positive, just convert directly
+        let mut bytes = [0u8; 32];
+        bytes[..16].copy_from_slice(&(val as u128).to_le_bytes());
+        Scalar::from_bytes_mod_order(bytes)
+    }
+}
+
+/// Convert Scalar to I256
+fn scalar_to_i256(s: &Scalar) -> I256 {
+    let bytes = *s.as_bytes();
+    // Scalar is always positive and less than L, so treat as unsigned
+    let u256 = U256::from_le_bytes(bytes);
+    // Convert to I256 - this is safe since Scalar < L < 2^253 < 2^255
+    u256.as_i256()
 }
 
 /// Generate half-size scalars (rho, tau) for a given hash value h
@@ -135,17 +151,44 @@ fn limbs2_to_scalar(limbs: &[u64; 2]) -> Scalar {
 ///
 /// And a flag indicating if rho is negative in its signed representation.
 pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar, bool) {
-    // Convert h to limbs
-    let v_limbs = h.into();
+    // Convert h to I256
+    let v = scalar_to_i256(h);
 
     // Run the algorithm
-    let (rho_limbs, tau_limbs) = curve25519_heea_vartime(&v_limbs);
+    let (rho_i256, tau_i128) = curve25519_heea_vartime(v);
 
     // Convert back to Scalars
-    let rho = rho_limbs.into();
-    let tau = limbs2_to_scalar(&tau_limbs);
+    let rho = i256_to_scalar(rho_i256);
+    let tau = i128_to_scalar(tau_i128);
 
-    (rho, tau, rho_limbs.0[3] != 0)
+    // Check if rho is negative
+    let rho_is_negative = rho_i256.is_negative();
+    let tau_is_negative = tau_i128.is_negative();
+
+    let (rho, tau, flip_h) = match (rho_is_negative, tau_is_negative) {
+        (true, true) => (-rho, -tau, false),
+        (true, false) => (-rho, tau, true),
+        (false, true) => (rho, -tau, true),
+        (false, false) => (rho, tau, false),
+    };
+
+    // Verify the relationship rho = tau * h (mod ell)
+    #[cfg(debug_assertions)]
+    {
+        let computed_rho = tau * h;
+        // if rho != computed_rho {
+            // println!("WARNING: rho != tau * h");
+            // println!("  rho = {:?}", rho);
+            // println!("  tau * h = {:?}", computed_rho);
+            println!("  rho = {:?}", rho);
+            println!("  tau = {:?}", tau);
+            // println!("  rho_is_negative = {}", rho_is_negative);
+            // println!("  tau_is_negative = {}", tau_is_negative);
+        // }
+    }
+
+
+    (rho, tau, flip_h)
 }
 
 #[cfg(test)]
@@ -170,47 +213,27 @@ mod tests {
             }
             let h = Scalar::from_hash(Sha512::new().chain(&random_bytes));
 
-            // Convert h to limbs to see the actual output
-            let h_limbs = h.into();
-            let (rho_limbs, tau_limbs) = curve25519_heea_vartime(&h_limbs);
+            // Convert h to I256 to see the actual output
+            let h_i256 = scalar_to_i256(&h);
+            let (rho_i256, tau_i128) = curve25519_heea_vartime(h_i256);
 
             // Check the magnitude of rho and tau in their signed representation
-            let rho_magnitude_bits = rho_limbs.bit_length();
+            let rho_magnitude_bits = bit_length_i256(rho_i256);
 
-            // For tau (2 limbs), compute bit length manually
-            let tau_is_negative = (tau_limbs[1] >> 63) != 0;
-            let tau_magnitude_bits = if tau_is_negative {
-                // For negative, compute bit length of absolute value
-                let mut negated = [!tau_limbs[0], !tau_limbs[1]];
-                let mut carry = true;
-                for i in 0..2 {
-                    let (sum, c) = negated[i].overflowing_add(if carry { 1 } else { 0 });
-                    negated[i] = sum;
-                    carry = c;
-                }
-                // Compute bit length of negated value
-                if negated[1] != 0 {
-                    128 - negated[1].leading_zeros()
-                } else if negated[0] != 0 {
-                    64 - negated[0].leading_zeros()
-                } else {
-                    1
-                }
+            // For tau (i128), compute bit length
+            let tau_magnitude_bits = if tau_i128 < 0 {
+                let abs_val = tau_i128.wrapping_neg();
+                128 - (abs_val.leading_zeros() as u32)
             } else {
-                if tau_limbs[1] != 0 {
-                    128 - tau_limbs[1].leading_zeros()
-                } else if tau_limbs[0] != 0 {
-                    64 - tau_limbs[0].leading_zeros()
-                } else {
-                    1
-                }
+                128 - (tau_i128.leading_zeros() as u32)
             };
 
             // Now convert to Scalars and verify the equation
-            let (rho, tau, _) = generate_half_size_scalars(&h);
+            let (rho, tau, flip) = generate_half_size_scalars(&h);
 
             // Verify that rho = tau * h (mod ell)
             let computed_rho = tau * h;
+            let computed_rho = if flip { -computed_rho } else { computed_rho };
             assert_eq!(rho, computed_rho, "rho should equal tau * h");
 
             // Check that they are non-zero

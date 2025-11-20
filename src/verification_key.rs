@@ -332,7 +332,7 @@ impl VerificationKey {
         let result = EdwardsPoint::vartime_multiscalar_mul(
             &[tau, rho, ts_hi, ts_lo],
             &[R, A, neg_B_prime, neg_B],
-            Some(128), // tell MSM that scalars are at most 128 bits
+            Some(130), // tell MSM that scalars are at most 128 bits
         );
         end_timer!(timer);
 

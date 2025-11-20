@@ -12,7 +12,7 @@ pub mod batch;
 mod error;
 pub mod heea;
 mod signing_key;
-mod u256;
+// mod u256;
 mod verification_key;
 
 // Allows importing traits used by `Signature`.
