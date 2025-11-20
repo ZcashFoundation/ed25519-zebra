@@ -205,6 +205,7 @@ impl Verifier {
         let check = EdwardsPoint::vartime_multiscalar_mul(
             once(&B_coeff).chain(A_coeffs.iter()).chain(R_coeffs.iter()),
             once(&B).chain(As.iter()).chain(Rs.iter()),
+            None,
         );
 
         if check.mul_by_cofactor().is_identity() {

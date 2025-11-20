@@ -74,3 +74,7 @@ name = "batch"
 [[bench]]
 name = "bench"
 harness = false
+
+
+[patch.crates-io]
+curve25519-dalek = { git = "https://github.com/zz-sol/curve25519-dalek.git", branch = "zz/impl_ches25", default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }

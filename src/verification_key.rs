@@ -1,11 +1,11 @@
 use core::convert::{TryFrom, TryInto};
 use curve25519_dalek::{
-    digest::Update,
+    constants::{ED25519_BASEPOINT_128_POINT, ED25519_BASEPOINT_POINT},
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
-    traits::IsIdentity,
+    traits::{IsIdentity, VartimeMultiscalarMul},
 };
-use sha2::Sha512;
+use sha2::{digest::Update, Sha512};
 use zeroize::DefaultIsZeroes;
 
 use ed25519::{signature::Verifier, Signature};
@@ -265,6 +265,7 @@ impl VerificationKey {
     /// τsB = τR + ρA where ρ ≡ τh (mod ℓ)
     ///
     /// Both ρ and τ are approximately half the size of h, enabling faster computation.
+    #[allow(non_snake_case)]
     pub fn verify_ches25(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         // Compute the hash scalar h (called k in the standard implementation)
         let h = Scalar::from_hash(
@@ -275,7 +276,7 @@ impl VerificationKey {
         );
 
         // Generate half-size scalars ρ and τ such that ρ ≡ τh (mod ℓ)
-        let (rho, tau) = crate::ches25::generate_half_size_scalars(&h);
+        let (rho, tau, rho_is_negative) = crate::ches25::generate_half_size_scalars(&h);
 
         // Extract s from the signature
         let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
@@ -293,22 +294,31 @@ impl VerificationKey {
         // Which is: [8]τR = [8](τsB - ρA)
         // Or equivalently: 0 = [8](τR - (τsB - ρA))
 
-        // Compute τs
-        let tau_s = tau * s;
+        // Compute τs and split τs into two 128-bit scalars:
+        // tau_s = tau_s_hi * 2^128 + tau_s_lo
+        let (ts_lo, ts_hi) = split(tau * s);
 
-        // Compute τR
-        let tau_R = tau * R;
+        // In decomposition, rho may be negative; adjust A accordingly
+        let (rho, A) = if rho_is_negative {
+            // If tau >= 2^128, flip the sign of ρ and A
+            (-rho, self.minus_A)
+        } else {
+            (rho, -self.minus_A)
+        };
 
-        // Get the public key point A
-        // We have minus_A stored, so A = -minus_A
-        let A = -self.minus_A;
+        // Use precomputed B' := B * 2^128
+        let neg_B_prime = -ED25519_BASEPOINT_128_POINT;
+        let neg_B = -ED25519_BASEPOINT_POINT;
 
-        // Compute R' = τsB - ρA
-        // Using the double scalar multiplication for efficiency
-        let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&(-rho), &A, &tau_s);
+        // result = τR + ρA - ts_hi*B' - ts_lo*B
+        let result = EdwardsPoint::vartime_multiscalar_mul(
+            &[tau, rho, ts_hi, ts_lo],
+            &[R, A, neg_B_prime, neg_B],
+            Some(128), // tell MSM that scalars are at most 128 bits
+        );
 
-        // Check if [8](τR - R') = 0
-        if (tau_R - R_prime).mul_by_cofactor().is_identity() {
+        // Check if [8](τR + ρA - ts_hi*B' - ts_lo*B) = 0
+        if result.mul_by_cofactor().is_identity() {
             Ok(())
         } else {
             Err(Error::InvalidSignature)
@@ -342,6 +352,21 @@ impl VerificationKey {
     }
 }
 
+fn split(t: Scalar) -> (Scalar, Scalar) {
+    let t_bytes = t.to_bytes();
+    let mut t_lo_bytes = [0u8; 32];
+    t_lo_bytes[..16].copy_from_slice(&t_bytes[..16]);
+    let mut t_hi_bytes = [0u8; 32];
+    t_hi_bytes[..16].copy_from_slice(&t_bytes[16..32]);
+    let t_lo = Option::<Scalar>::from(Scalar::from_canonical_bytes(t_lo_bytes))
+        .ok_or(Error::InvalidSignature)
+        .unwrap();
+    let t_hi = Option::<Scalar>::from(Scalar::from_canonical_bytes(t_hi_bytes))
+        .ok_or(Error::InvalidSignature)
+        .unwrap();
+    (t_lo, t_hi)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -366,7 +391,10 @@ mod tests {
 
         // Verify with standard method
         let result_standard = verification_key.verify(&signature, msg);
-        assert!(result_standard.is_ok(), "Standard verification should succeed");
+        assert!(
+            result_standard.is_ok(),
+            "Standard verification should succeed"
+        );
 
         // Verify with CHES25 method
         let result_ches25 = verification_key.verify_ches25(&signature, msg);
@@ -391,8 +419,14 @@ mod tests {
         let result_ches25 = verification_key.verify_ches25(&signature, wrong_msg);
 
         // Both should fail
-        assert!(result_standard.is_err(), "Standard verification should fail for wrong message");
-        assert!(result_ches25.is_err(), "CHES25 verification should fail for wrong message");
+        assert!(
+            result_standard.is_err(),
+            "Standard verification should fail for wrong message"
+        );
+        assert!(
+            result_ches25.is_err(),
+            "CHES25 verification should fail for wrong message"
+        );
     }
 
     #[test]
@@ -414,7 +448,8 @@ mod tests {
             assert_eq!(
                 result_standard.is_ok(),
                 result_ches25.is_ok(),
-                "Both methods should agree on signature {}", i
+                "Both methods should agree on signature {}",
+                i
             );
         }
     }

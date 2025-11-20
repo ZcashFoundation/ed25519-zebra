@@ -25,7 +25,7 @@ fn bit_length_4(limbs: &[u64; 4]) -> u32 {
     // Find the highest non-zero limb
     for i in (0..4).rev() {
         let word = if is_negative {
-            limbs[i] ^ 0xFFFFFFFFFFFFFFFF  // Flip bits if negative
+            limbs[i] ^ 0xFFFFFFFFFFFFFFFF // Flip bits if negative
         } else {
             limbs[i]
         };
@@ -36,13 +36,13 @@ fn bit_length_4(limbs: &[u64; 4]) -> u32 {
         }
     }
 
-    1  // All zero
+    1 // All zero
 }
 
 /// Add with left shift: a += b << s (with carry)
 fn add_lshift_4(a: &mut [u64; 4], b: &[u64; 4], s: u32) {
     if s >= 256 {
-        return;  // Shift is too large, result is zero
+        return; // Shift is too large, result is zero
     }
 
     let limb_shift = (s / 64) as usize;
@@ -149,7 +149,7 @@ pub fn curve25519_heea_vartime(v: &[u64; 4]) -> ([u64; 4], [u64; 2]) {
     let mut t0 = [0u64; 2];
     let mut t1 = [1u64, 0u64];
 
-    let mut bl_r0 = 253u32;  // bit_length(L) = 253
+    let mut bl_r0 = 253u32; // bit_length(L) = 253
     let mut bl_r1 = bit_length_4(&r1);
 
     // Main loop - continue until r1 is approximately half-size (~127 bits)
@@ -229,10 +229,18 @@ pub fn curve25519_heea_vartime(v: &[u64; 4]) -> ([u64; 4], [u64; 2]) {
 fn scalar_to_limbs(s: &Scalar) -> [u64; 4] {
     let bytes = s.as_bytes();
     [
-        u64::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]),
-        u64::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]]),
-        u64::from_le_bytes([bytes[16], bytes[17], bytes[18], bytes[19], bytes[20], bytes[21], bytes[22], bytes[23]]),
-        u64::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27], bytes[28], bytes[29], bytes[30], bytes[31]]),
+        u64::from_le_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]),
+        u64::from_le_bytes([
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15],
+        ]),
+        u64::from_le_bytes([
+            bytes[16], bytes[17], bytes[18], bytes[19], bytes[20], bytes[21], bytes[22], bytes[23],
+        ]),
+        u64::from_le_bytes([
+            bytes[24], bytes[25], bytes[26], bytes[27], bytes[28], bytes[29], bytes[30], bytes[31],
+        ]),
     ]
 }
 
@@ -246,12 +254,7 @@ fn limbs_to_scalar(limbs: &[u64; 4]) -> Scalar {
     if is_negative {
         // For negative numbers, we need to negate and then compute L - value
         // Two's complement: flip bits and add 1
-        let mut negated = [
-            !limbs[0],
-            !limbs[1],
-            !limbs[2],
-            !limbs[3],
-        ];
+        let mut negated = [!limbs[0], !limbs[1], !limbs[2], !limbs[3]];
         // Add 1
         let mut carry = true;
         for i in 0..4 {
@@ -268,10 +271,9 @@ fn limbs_to_scalar(limbs: &[u64; 4]) -> Scalar {
 
         // Return L - positive (modular negation)
         let ell = Scalar::from_bytes_mod_order([
-            0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
-            0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+            0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9,
+            0xde, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x10,
         ]);
         ell - positive
     } else {
@@ -304,10 +306,9 @@ fn limbs2_to_scalar(limbs: &[u64; 2]) -> Scalar {
         let positive = Scalar::from_bytes_mod_order(bytes);
 
         let ell = Scalar::from_bytes_mod_order([
-            0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
-            0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10,
+            0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9,
+            0xde, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x10,
         ]);
         ell - positive
     } else {
@@ -322,7 +323,9 @@ fn limbs2_to_scalar(limbs: &[u64; 2]) -> Scalar {
 ///
 /// This function takes the hash value h from the signature verification equation
 /// and produces two half-size scalars rho and tau such that rho = tau*h (mod ell).
-pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar) {
+///
+/// And a flag indicating if rho is negative in its signed representation.
+pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar, bool) {
     // Convert h to limbs
     let v_limbs = scalar_to_limbs(h);
 
@@ -333,14 +336,14 @@ pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar) {
     let rho = limbs_to_scalar(&rho_limbs);
     let tau = limbs2_to_scalar(&tau_limbs);
 
-    (rho, tau)
+    (rho, tau, rho_limbs[3] != 0)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::RngCore;
     use curve25519_dalek::digest::Update;
+    use rand::RngCore;
 
     #[test]
     fn test_bit_length_4() {
@@ -361,7 +364,7 @@ mod tests {
         let mut rng = thread_rng();
 
         // Test with multiple random scalars
-        for _ in 0..10 {
+        for _ in 0..1000 {
             // Generate a random scalar by hashing random bytes
             let mut random_bytes = [0u8; 64];
             for byte in &mut random_bytes {
@@ -406,7 +409,7 @@ mod tests {
             };
 
             // Now convert to Scalars and verify the equation
-            let (rho, tau) = generate_half_size_scalars(&h);
+            let (rho, tau, _) = generate_half_size_scalars(&h);
 
             // Verify that rho = tau * h (mod ell)
             let computed_rho = tau * h;
@@ -417,14 +420,15 @@ mod tests {
             assert_ne!(tau, Scalar::ZERO, "tau should be non-zero");
 
             // Both magnitudes should be approximately half-size (~127 bits)
-            // The algorithm targets 127 bits, but we allow up to 140 bits due to approximation
             assert!(
-                rho_magnitude_bits <= 140,
-                "rho magnitude should be approximately half-size, got {} bits", rho_magnitude_bits
+                rho_magnitude_bits <= 128,
+                "rho magnitude should be approximately half-size, got {} bits",
+                rho_magnitude_bits
             );
             assert!(
-                tau_magnitude_bits <= 140,
-                "tau magnitude should be approximately half-size, got {} bits", tau_magnitude_bits
+                tau_magnitude_bits <= 128,
+                "tau magnitude should be approximately half-size, got {} bits",
+                tau_magnitude_bits
             );
         }
     }
