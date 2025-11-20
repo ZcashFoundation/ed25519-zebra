@@ -268,12 +268,18 @@ impl VerificationKey {
     /// The standard verification equation sB = R + hA is transformed to:
     /// τsB = τR + ρA where ρ ≡ τh (mod ℓ)
     ///
-    /// Both ρ and τ are approximately half the size of h, enabling faster computation.
+    /// Both ρ and τ are approximately half the size of h.
+    ///
+    /// We then decompose τs into two 128-bit scalars:
+    /// τs = τs_hi * 2^128 + τs_lo
+    ///
+    /// The verification equation becomes:
+    /// τs_lo B + τs_hi (2^128 B) = τR + ρA
+    /// which can be done via 4-variable MSM with half-size scalars.
     #[allow(non_snake_case)]
     pub fn verify_heea(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
         let total_timer = start_timer!(|| "verify_heea total");
 
-        // println!("============");
         // Compute the hash scalar h (called k in the standard implementation)
         let h = Scalar::from_hash(
             Sha512::default()
@@ -284,9 +290,11 @@ impl VerificationKey {
 
         let timer = start_timer!(|| "heea: generate half-size scalars");
         // Generate half-size scalars ρ and τ such that ρ ≡ τh (mod ℓ)
+        // in order to have rho and tau approximately half the size of h
+        // it is possible that we compute ρ ≡ -τh (mod ℓ)
+        // this is indicated by `flip_h` flag being true,
+        // in which case we will need to negate A later
         let (rho, tau, flip_h) = crate::heea::generate_half_size_scalars(&h);
-        // println!("tau in verify: {:?}", tau);
-        // println!("rho in verify: {:?}", rho);
         end_timer!(timer);
 
         // Extract s from the signature
@@ -299,44 +307,35 @@ impl VerificationKey {
             .ok_or(Error::InvalidSignature)?;
 
         // Standard verification checks: sB = R + hA
-        // Transformed verification: τsB = τR + ρA
+        // Transformed verification: -τsB + τR + ρA == 0
+        // That is
+        //  τs_lo (-B) + τs_hi (-2^128 B) + τR + ρA == 0
         //
-        // We verify: [8]τsB = [8](τR + ρA)
-        // Which is: [8]τR = [8](τsB - ρA)
-        // Or equivalently: 0 = [8](τR - (τsB - ρA))
+        // We verify:
+        //  [8] τs_lo (-B) + [8] τs_hi (-2^128 B) + [8] τR + [8] ρA == 0
 
         // Compute τs and split τs into two 128-bit scalars:
-        // tau_s = tau_s_hi * 2^128 + tau_s_lo
+        // τs = τs_hi * 2^128 + τs_lo
         let (ts_lo, ts_hi) = split(tau * s);
 
-        // // In decomposition, rho may be negative; adjust A accordingly
-        // let (rho, A) = if is_128_bits(&rho) {
-        //     (rho, -self.minus_A)
-        // } else {
-        //     // If tau >= 2^128, flip the sign of ρ and A
-        //     (-rho, self.minus_A)
-        // };
         let A = if flip_h { self.minus_A } else { -self.minus_A };
 
         // Use precomputed B' := B * 2^128
+        // TODO: consider precomputing and storing this for better performance
         let neg_B_prime = -ED25519_BASEPOINT_128_POINT;
         let neg_B = -ED25519_BASEPOINT_POINT;
 
-        // println!("ts_lo: {:?}", ts_lo);
-        // println!("ts_hi: {:?}", ts_hi);
-        // println!("tau: {:?}", tau);
-        // println!("rho: {:?}", rho);
-
-        let timer = start_timer!(|| "heea: multiscalar multiplication");
-        // result = τR + ρA - ts_hi*B' - ts_lo*B
+        let timer = start_timer!(|| "heea: 4 scalar multiplication");
+        // result = τs_lo (-B) + τs_hi (-2^128 B) + τR + ρA
+        // TODO: for even better performance, we may want to implement a custom MSM
         let result = EdwardsPoint::vartime_multiscalar_mul(
             &[tau, rho, ts_hi, ts_lo],
             &[R, A, neg_B_prime, neg_B],
-            Some(130), // tell MSM that scalars are at most 128 bits
+            Some(129), // tell MSM that scalars are at most 128 bits
         );
         end_timer!(timer);
 
-        // Check if [8](τR + ρA - ts_hi*B' - ts_lo*B) = 0
+        // Check if [8] τs_lo (-B) + [8] τs_hi (-2^128 B) + [8] τR + [8] ρA == 0
         let res = if result.mul_by_cofactor().is_identity() {
             Ok(())
         } else {
@@ -363,7 +362,9 @@ impl VerificationKey {
         // <=>   [8]R = [8][s]B - [8][k]A
         // <=>   0 = [8](R - ([s]B - [k]A))
         // <=>   0 = [8](R - R')  where R' = [s]B - [k]A
+        let timer = start_timer!(|| "double scalar mul");
         let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&k, &self.minus_A, &s);
+        end_timer!(timer);
 
         if (R - R_prime).mul_by_cofactor().is_identity() {
             Ok(())

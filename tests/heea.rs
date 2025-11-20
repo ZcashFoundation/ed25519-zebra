@@ -4,33 +4,6 @@ use ed25519_zebra::VerificationKey;
 use rand::thread_rng;
 
 #[test]
-fn test_verify_heea_correctness() {
-    // Generate a random signing key
-    let mut rng = thread_rng();
-    let signing_key = SigningKey::new(&mut rng);
-
-    // Get the verification key
-    let verification_key = VerificationKey::from(&signing_key);
-
-    // Create a test message
-    let msg = b"Test message for heea verification";
-
-    // Sign the message
-    let signature = signing_key.sign(msg);
-
-    // Verify with standard method
-    let result_standard = verification_key.verify(&signature, msg);
-    assert!(
-        result_standard.is_ok(),
-        "Standard verification should succeed"
-    );
-
-    // Verify with heea method
-    let result_heea = verification_key.verify_heea(&signature, msg);
-    assert!(result_heea.is_ok(), "heea verification should succeed");
-}
-
-#[test]
 fn test_verify_heea_invalid_signature() {
     let mut rng = thread_rng();
     let signing_key = SigningKey::new(&mut rng);
@@ -60,7 +33,7 @@ fn test_verify_heea_invalid_signature() {
 fn test_verify_heea_multiple_signatures() {
     let mut rng = thread_rng();
 
-    for i in 0..10 {
+    for i in 0..100 {
         let signing_key = SigningKey::new(&mut rng);
         let verification_key = VerificationKey::from(&signing_key);
 
@@ -78,13 +51,6 @@ fn test_verify_heea_multiple_signatures() {
         assert!(
             result_heea.is_ok(),
             "heea verification should succeed for signature {}",
-            i
-        );
-
-        assert_eq!(
-            result_standard.is_ok(),
-            result_heea.is_ok(),
-            "Both methods should agree on signature {}",
             i
         );
     }

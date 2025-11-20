@@ -52,9 +52,6 @@ pub(crate) fn curve25519_heea_vartime(v: I256) -> (I256, i128) {
             // For t, handle shift carefully - if s >= 128, result would overflow
             if s < 128 {
                 t = t.wrapping_sub(t1.wrapping_shl(s));
-            } else {
-                // Shift is too large, effectively makes t1 << s zero in wrapping arithmetic
-                t = t;
             }
         } else {
             // Different sign: add
@@ -62,9 +59,6 @@ pub(crate) fn curve25519_heea_vartime(v: I256) -> (I256, i128) {
             // For t, handle shift carefully - if s >= 128, result would overflow
             if s < 128 {
                 t = t.wrapping_add(t1.wrapping_shl(s));
-            } else {
-                // Shift is too large, effectively makes t1 << s zero in wrapping arithmetic
-                t = t;
             }
         }
 
@@ -88,6 +82,7 @@ pub(crate) fn curve25519_heea_vartime(v: I256) -> (I256, i128) {
 }
 
 /// Compute bit length of I256 (magnitude, not including sign)
+#[inline]
 fn bit_length_i256(val: I256) -> u32 {
     if val == I256::ZERO {
         return 1;
@@ -103,20 +98,22 @@ fn bit_length_i256(val: I256) -> u32 {
 }
 
 /// Convert I256 to Scalar
+#[inline]
 fn i256_to_scalar(val: I256) -> Scalar {
     if val < I256::ZERO {
         // For negative numbers, compute absolute value and negate
         let abs_val = val.wrapping_neg();
         let bytes = abs_val.to_le_bytes();
-        let positive = Scalar::from_bytes_mod_order(bytes);
+        let positive = Scalar::from_canonical_bytes(bytes).unwrap();
         -positive
     } else {
         let bytes = val.to_le_bytes();
-        Scalar::from_bytes_mod_order(bytes)
+        Scalar::from_canonical_bytes(bytes).unwrap()
     }
 }
 
 /// Convert i128 to Scalar (for tau)
+#[inline]
 fn i128_to_scalar(val: i128) -> Scalar {
     if val < 0 {
         // For negative, we want: Scalar representing (ell + val) = ell - |val|
@@ -124,22 +121,22 @@ fn i128_to_scalar(val: i128) -> Scalar {
         let abs_val = (-val) as u128;
         let mut bytes = [0u8; 32];
         bytes[..16].copy_from_slice(&abs_val.to_le_bytes());
-        let positive_scalar = Scalar::from_bytes_mod_order(bytes);
+        let positive_scalar = Scalar::from_canonical_bytes(bytes).unwrap();
         // Return -|val| mod ell, which is ell - |val|
         -positive_scalar
     } else {
         // For positive, just convert directly
         let mut bytes = [0u8; 32];
         bytes[..16].copy_from_slice(&(val as u128).to_le_bytes());
-        Scalar::from_bytes_mod_order(bytes)
+        Scalar::from_canonical_bytes(bytes).unwrap()
     }
 }
 
 /// Convert Scalar to I256
+#[inline]
 fn scalar_to_i256(s: &Scalar) -> I256 {
-    let bytes = *s.as_bytes();
     // Scalar is always positive and less than L, so treat as unsigned
-    let u256 = U256::from_le_bytes(bytes);
+    let u256 = U256::from_le_bytes(*s.as_bytes());
     // Convert to I256 - this is safe since Scalar < L < 2^253 < 2^255
     u256.as_i256()
 }
@@ -162,8 +159,8 @@ pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar, bool) {
     let tau = i128_to_scalar(tau_i128);
 
     // Check if rho is negative
-    let rho_is_negative = rho_i256.is_negative();
-    let tau_is_negative = tau_i128.is_negative();
+    let rho_is_negative = rho_i256 < I256::ZERO;
+    let tau_is_negative = tau_i128 < 0;
 
     let (rho, tau, flip_h) = match (rho_is_negative, tau_is_negative) {
         (true, true) => (-rho, -tau, false),
@@ -171,22 +168,6 @@ pub fn generate_half_size_scalars(h: &Scalar) -> (Scalar, Scalar, bool) {
         (false, true) => (rho, -tau, true),
         (false, false) => (rho, tau, false),
     };
-
-    // Verify the relationship rho = tau * h (mod ell)
-    #[cfg(debug_assertions)]
-    {
-        let computed_rho = tau * h;
-        // if rho != computed_rho {
-            // println!("WARNING: rho != tau * h");
-            // println!("  rho = {:?}", rho);
-            // println!("  tau * h = {:?}", computed_rho);
-            println!("  rho = {:?}", rho);
-            println!("  tau = {:?}", tau);
-            // println!("  rho_is_negative = {}", rho_is_negative);
-            // println!("  tau_is_negative = {}", tau_is_negative);
-        // }
-    }
-
 
     (rho, tau, flip_h)
 }

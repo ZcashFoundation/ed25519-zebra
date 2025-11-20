@@ -23,8 +23,12 @@ include = [
 features = ["nightly"]
 
 [dependencies]
+### timer for benchmarking only
+### TODO: remove
 ark-std = "0.5.0"
 # ark-std = { version = "0.5.0", features = [ "print-trace" ]}
+
+
 # "digest" (pre-1.0.0) is exempt from SemVer but breaking changes will bump minor versions
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#stable)
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#public-api-semver-exemptions)
@@ -45,8 +49,7 @@ zeroize = { version = "1.8", default-features = false, features = ["derive"] }
 rand = "0.8"
 bincode = "1"
 criterion = "0.7"
-# bump up the legacy version to 3 to avoid compiling issues with `thiserror`
-ed25519-zebra-legacy = { package = "ed25519-zebra", version = "3" }
+ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
 color-eyre = "0.6"
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 once_cell = "1.21"
