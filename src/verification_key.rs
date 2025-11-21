@@ -1,10 +1,8 @@
-use ark_std::{end_timer, start_timer};
 use core::convert::{TryFrom, TryInto};
 use curve25519_dalek::{
-    constants::{ED25519_BASEPOINT_128_POINT, ED25519_BASEPOINT_POINT},
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
-    traits::{IsIdentity, VartimeMultiscalarMul},
+    traits::IsIdentity,
 };
 use sha2::{digest::Update, Sha512};
 use zeroize::DefaultIsZeroes;
@@ -248,16 +246,13 @@ impl VerificationKey {
     /// [ps]: https://zips.z.cash/protocol/protocol.pdf#concreteed25519
     /// [ZIP215]: https://zips.z.cash/zip-0215
     pub fn verify(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
-        let total_timer = start_timer!(|| "verify_heea total");
         let k = Scalar::from_hash(
             Sha512::default()
                 .chain(&signature.r_bytes()[..])
                 .chain(&self.A_bytes.0[..])
                 .chain(msg),
         );
-        self.verify_prehashed(signature, k)?;
-        end_timer!(total_timer);
-        Ok(())
+        self.verify_prehashed(signature, k)
     }
 
     /// Verify a signature using the heea half-size scalar optimization.
@@ -278,8 +273,6 @@ impl VerificationKey {
     /// which can be done via 4-variable MSM with half-size scalars.
     #[allow(non_snake_case)]
     pub fn verify_heea(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
-        let total_timer = start_timer!(|| "verify_heea total");
-
         // Compute the hash scalar h (called k in the standard implementation)
         let h = Scalar::from_hash(
             Sha512::default()
@@ -288,61 +281,40 @@ impl VerificationKey {
                 .chain(msg),
         );
 
-        let timer = start_timer!(|| "heea: generate half-size scalars");
         // Generate half-size scalars ρ and τ such that ρ ≡ τh (mod ℓ)
         // in order to have rho and tau approximately half the size of h
         // it is possible that we compute ρ ≡ -τh (mod ℓ)
         // this is indicated by `flip_h` flag being true,
         // in which case we will need to negate A later
         let (rho, tau, flip_h) = crate::heea::generate_half_size_scalars(&h);
-        end_timer!(timer);
 
         // Extract s from the signature
         let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
             .ok_or(Error::InvalidSignature)?;
 
         // Decode R from the signature
-        let R = CompressedEdwardsY(*signature.r_bytes())
+        let neg_R = -CompressedEdwardsY(*signature.r_bytes())
             .decompress()
             .ok_or(Error::InvalidSignature)?;
 
         // Standard verification checks: sB = R + hA
         // Transformed verification: -τsB + τR + ρA == 0
-        // That is
-        //  τs_lo (-B) + τs_hi (-2^128 B) + τR + ρA == 0
         //
         // We verify:
-        //  [8] τs_lo (-B) + [8] τs_hi (-2^128 B) + [8] τR + [8] ρA == 0
+        //  [8] τs B + [8] τ (-R) + [8] ρ (-A) == 0
 
-        // Compute τs and split τs into two 128-bit scalars:
-        // τs = τs_hi * 2^128 + τs_lo
-        let (ts_lo, ts_hi) = split(tau * s);
+        // Compute τs
+        let ts = tau * s;
+        let A = if flip_h { -self.minus_A } else { self.minus_A };
+        // Compute the multi-scalar multiplication
+        let result = EdwardsPoint::vartime_triple_scalar_mul_basepoint(&tau, &neg_R, &rho, &A, &ts);
 
-        let A = if flip_h { self.minus_A } else { -self.minus_A };
-
-        // Use precomputed B' := B * 2^128
-        // TODO: consider precomputing and storing this for better performance
-        let neg_B_prime = -ED25519_BASEPOINT_128_POINT;
-        let neg_B = -ED25519_BASEPOINT_POINT;
-
-        let timer = start_timer!(|| "heea: 4 scalar multiplication");
-        // result = τs_lo (-B) + τs_hi (-2^128 B) + τR + ρA
-        // TODO: for even better performance, we may want to implement a custom MSM
-        let result = EdwardsPoint::vartime_multiscalar_mul(
-            &[tau, rho, ts_hi, ts_lo],
-            &[R, A, neg_B_prime, neg_B],
-            Some(129), // tell MSM that scalars are at most 128 bits
-        );
-        end_timer!(timer);
-
-        // Check if [8] τs_lo (-B) + [8] τs_hi (-2^128 B) + [8] τR + [8] ρA == 0
-        let res = if result.mul_by_cofactor().is_identity() {
+        // Check if [8] τs B + [8] τ (-R) + [8] ρ (-A) == 0
+        if result.mul_by_cofactor().is_identity() {
             Ok(())
         } else {
             Err(Error::InvalidSignature)
-        };
-        end_timer!(total_timer);
-        res
+        }
     }
 
     /// Verify a signature with a prehashed `k` value. Note that this is not the
@@ -362,9 +334,7 @@ impl VerificationKey {
         // <=>   [8]R = [8][s]B - [8][k]A
         // <=>   0 = [8](R - ([s]B - [k]A))
         // <=>   0 = [8](R - R')  where R' = [s]B - [k]A
-        let timer = start_timer!(|| "double scalar mul");
         let R_prime = EdwardsPoint::vartime_double_scalar_mul_basepoint(&k, &self.minus_A, &s);
-        end_timer!(timer);
 
         if (R - R_prime).mul_by_cofactor().is_identity() {
             Ok(())
@@ -372,19 +342,4 @@ impl VerificationKey {
             Err(Error::InvalidSignature)
         }
     }
-}
-
-fn split(t: Scalar) -> (Scalar, Scalar) {
-    let t_bytes = t.to_bytes();
-    let mut t_lo_bytes = [0u8; 32];
-    t_lo_bytes[..16].copy_from_slice(&t_bytes[..16]);
-    let mut t_hi_bytes = [0u8; 32];
-    t_hi_bytes[..16].copy_from_slice(&t_bytes[16..32]);
-    let t_lo = Option::<Scalar>::from(Scalar::from_canonical_bytes(t_lo_bytes))
-        .ok_or(Error::InvalidSignature)
-        .unwrap();
-    let t_hi = Option::<Scalar>::from(Scalar::from_canonical_bytes(t_hi_bytes))
-        .ok_or(Error::InvalidSignature)
-        .unwrap();
-    (t_lo, t_hi)
 }

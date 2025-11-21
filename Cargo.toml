@@ -23,12 +23,6 @@ include = [
 features = ["nightly"]
 
 [dependencies]
-### timer for benchmarking only
-### TODO: remove
-ark-std = "0.5.0"
-# ark-std = { version = "0.5.0", features = [ "print-trace" ]}
-
-
 # "digest" (pre-1.0.0) is exempt from SemVer but breaking changes will bump minor versions
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#stable)
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#public-api-semver-exemptions)
