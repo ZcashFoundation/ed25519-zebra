@@ -144,6 +144,11 @@ impl Verifier {
     /// from "Accelerating EdDSA Signature Verification with Faster Scalar Size Halving" (TCHES 2025).
     ///
     /// This method uses half-size scalars for improved performance with larger batch sizes.
+    ///
+    /// Note: According to the paper (Section 4.2), for a single signer (same public key for all
+    /// signatures), the computational cost without optimization is the same as the classical method.
+    /// The optimization would be to skip hEEA calls and use equation (1) directly. For now, we use
+    /// the general approach which works correctly for both cases.
     #[allow(non_snake_case)]
     pub fn verify_heea<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
         // Step 1: Pick random U < ℓ and compute U' such that UU' ≡ 1 mod ℓ
@@ -192,9 +197,9 @@ impl Verifier {
 
                 // Store ρ_i and A_i for Σ(ρ_i * A_i)
                 // Handle the flip_h case: if flip_h, we computed ρ_i ≡ -τ_i * v_i
-                let A = if flip_h { -A } else { A };
+                let A_adjusted = if flip_h { -A } else { A };
                 A_coeffs.push(rho_i);
-                As.push(A);
+                As.push(A_adjusted);
             }
         }
 

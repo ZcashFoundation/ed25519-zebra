@@ -306,7 +306,7 @@ dependencies = [
 [[package]]
 name = "curve25519-dalek"
 version = "4.1.3"
-source = "git+https://github.com/zz-sol/curve25519-dalek.git?branch=zz%2Fimpl_ches25#8adb26d042f05d6c8766cc71fc1a0678e797dc62"
+source = "git+https://github.com/zz-sol/curve25519-dalek.git?branch=zz%2Fimpl_ches25#382e8dd3e3ee8968ae07dce96f902286b16bd9ee"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -321,7 +321,7 @@ dependencies = [
 [[package]]
 name = "curve25519-dalek-derive"
 version = "0.1.1"
-source = "git+https://github.com/zz-sol/curve25519-dalek.git?branch=zz%2Fimpl_ches25#8adb26d042f05d6c8766cc71fc1a0678e797dc62"
+source = "git+https://github.com/zz-sol/curve25519-dalek.git?branch=zz%2Fimpl_ches25#382e8dd3e3ee8968ae07dce96f902286b16bd9ee"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -926,9 +926,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.110"
+version = "2.0.111"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a99801b5bd34ede4cf3fc688c5919368fea4e4814a4664359503e6015b280aea"
+checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
 dependencies = [
  "proc-macro2",
  "quote",
