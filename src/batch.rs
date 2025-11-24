@@ -140,6 +140,103 @@ impl Verifier {
         self.batch_size += 1;
     }
 
+    /// Perform batch verification using the new hEEA-based randomization method
+    /// from "Accelerating EdDSA Signature Verification with Faster Scalar Size Halving" (TCHES 2025).
+    ///
+    /// This method uses half-size scalars for improved performance with larger batch sizes.
+    #[allow(non_snake_case)]
+    pub fn verify_heea<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
+        // Step 1: Pick random U < ℓ and compute U' such that UU' ≡ 1 mod ℓ
+        let mut U_bytes = [0u8; 32];
+        rng.fill_bytes(&mut U_bytes);
+        let U = Scalar::from_bytes_mod_order(U_bytes);
+
+        // Compute U_inv = U^-1 mod ℓ
+        let U_inv = U.invert();
+
+        // Prepare accumulators
+        let mut sum_tau_s = Scalar::ZERO;
+        let mut R_coeffs = Vec::with_capacity(self.batch_size);
+        let mut Rs = Vec::with_capacity(self.batch_size);
+        let mut A_coeffs = Vec::with_capacity(self.batch_size);
+        let mut As = Vec::with_capacity(self.batch_size);
+
+        // Step 2-3: For each signature, compute half-size scalars and accumulate
+        for (vk_bytes, sigs) in self.signatures.iter() {
+            let A = CompressedEdwardsY(vk_bytes.0)
+                .decompress()
+                .ok_or(Error::InvalidSignature)?;
+
+            for (k, sig) in sigs.iter() {
+                // v_i = h_i * U' mod ℓ
+                let v = k * U_inv;
+
+                // Generate half-size scalars: ρ_i ≡ τ_i * v_i mod ℓ
+                // This means: ρ_i ≡ τ_i * h_i * U' mod ℓ
+                // Or equivalently: τ_i * h_i ≡ U * ρ_i mod ℓ
+                let (rho_i, tau_i, flip_h) = crate::heea::generate_half_size_scalars(&v);
+
+                // Extract s and R from signature
+                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*sig.s_bytes()))
+                    .ok_or(Error::InvalidSignature)?;
+                let R = CompressedEdwardsY(*sig.r_bytes())
+                    .decompress()
+                    .ok_or(Error::InvalidSignature)?;
+
+                // Accumulate τ_i * s_i
+                sum_tau_s += tau_i * s;
+
+                // Store τ_i and R_i for Σ(τ_i * R_i)
+                R_coeffs.push(tau_i);
+                Rs.push(R);
+
+                // Store ρ_i and A_i for Σ(ρ_i * A_i)
+                // Handle the flip_h case: if flip_h, we computed ρ_i ≡ -τ_i * v_i
+                let A = if flip_h { -A } else { A };
+                A_coeffs.push(rho_i);
+                As.push(A);
+            }
+        }
+
+        // Step 4: Compute R_sum = Σ(τ_i * R_i) and A_sum = Σ(ρ_i * A_i)
+        use curve25519_dalek::traits::VartimeMultiscalarMul;
+        let R_sum = EdwardsPoint::vartime_multiscalar_mul(R_coeffs.iter(), Rs.iter(), Some(129));
+        let A_sum = EdwardsPoint::vartime_multiscalar_mul(A_coeffs.iter(), As.iter(), Some(129));
+
+        // Step 5: Call hEEA_approx_q with U to get final ρ and τ
+        // such that ρ ≡ τ * U mod ℓ
+        let (rho_final, tau_final, flip_final) = crate::heea::generate_half_size_scalars(&U);
+
+        // Step 6: Final verification equation
+        // From step 4: sum_tau_s * B = R_sum + U * A_sum
+        // Multiply by τ_final: τ_final * sum_tau_s * B = τ_final * R_sum + τ_final * U * A_sum
+        // Since ρ_final ≡ τ_final * U mod ℓ:
+        //   τ_final * sum_tau_s * B = τ_final * R_sum + ρ_final * A_sum
+        //
+        // Rearranging: τ_final * R_sum + ρ_final * A_sum - τ_final * sum_tau_s * B = 0
+        //
+        // We verify: [8] * (τ_final * R_sum + ρ_final * A_sum - τ_final * sum_tau_s * B) = 0
+
+        let ts_final = tau_final * sum_tau_s;
+        let A_final = if flip_final { -A_sum } else { A_sum };
+
+        // vartime_triple_scalar_mul_basepoint computes: a*A + b*B + c*BASEPOINT
+        // We want: tau_final * R_sum + rho_final * A_final - ts_final * BASEPOINT = 0
+        let result = EdwardsPoint::vartime_triple_scalar_mul_basepoint(
+            &rho_final,
+            &A_final,
+            &tau_final,
+            &R_sum,
+            &(-ts_final),
+        );
+
+        if result.mul_by_cofactor().is_identity() {
+            Ok(())
+        } else {
+            Err(Error::InvalidSignature)
+        }
+    }
+
     /// Perform batch verification, returning `Ok(())` if all signatures were
     /// valid and `Err` otherwise.
     #[allow(non_snake_case)]

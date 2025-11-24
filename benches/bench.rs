@@ -43,7 +43,7 @@ fn bench_batch_verify(c: &mut Criterion) {
         );
         #[cfg(feature = "alloc")]
         group.bench_with_input(
-            BenchmarkId::new("Signatures with Distinct Pubkeys", n),
+            BenchmarkId::new("Distinct Pubkeys (Classic)", n),
             &sigs,
             |b, sigs| {
                 b.iter(|| {
@@ -56,10 +56,24 @@ fn bench_batch_verify(c: &mut Criterion) {
             },
         );
         #[cfg(feature = "alloc")]
+        group.bench_with_input(
+            BenchmarkId::new("Distinct Pubkeys (hEEA)", n),
+            &sigs,
+            |b, sigs| {
+                b.iter(|| {
+                    let mut batch = batch::Verifier::new();
+                    for (vk_bytes, sig) in sigs.iter().cloned() {
+                        batch.queue((vk_bytes, sig, b""));
+                    }
+                    batch.verify_heea(thread_rng())
+                })
+            },
+        );
+        #[cfg(feature = "alloc")]
         let sigs = sigs_with_same_pubkey().take(*n).collect::<Vec<_>>();
         #[cfg(feature = "alloc")]
         group.bench_with_input(
-            BenchmarkId::new("Signatures with the Same Pubkey", n),
+            BenchmarkId::new("Same Pubkey (Classic)", n),
             &sigs,
             |b, sigs| {
                 b.iter(|| {
@@ -68,6 +82,20 @@ fn bench_batch_verify(c: &mut Criterion) {
                         batch.queue((vk_bytes, sig, b""));
                     }
                     batch.verify(thread_rng())
+                })
+            },
+        );
+        #[cfg(feature = "alloc")]
+        group.bench_with_input(
+            BenchmarkId::new("Same Pubkey (hEEA)", n),
+            &sigs,
+            |b, sigs| {
+                b.iter(|| {
+                    let mut batch = batch::Verifier::new();
+                    for (vk_bytes, sig) in sigs.iter().cloned() {
+                        batch.queue((vk_bytes, sig, b""));
+                    }
+                    batch.verify_heea(thread_rng())
                 })
             },
         );
