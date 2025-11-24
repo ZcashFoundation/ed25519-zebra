@@ -48,7 +48,7 @@ fn batch_verify_with_one_bad_sig() {
 #[test]
 fn batch_verify_heea() {
     let mut batch = batch::Verifier::new();
-    for _ in 0..4 {
+    for _ in 0..32 {
         let sk = SigningKey::new(thread_rng());
         let pk_bytes = VerificationKeyBytes::from(&sk);
         let msg = b"BatchVerifyTest_HEEA";
@@ -86,22 +86,22 @@ fn batch_verify_heea_with_one_bad_sig() {
     }
 }
 
-// #[test]
-// fn batch_verify_heea_different_batch_sizes() {
-//     // Test various batch sizes to ensure the algorithm works correctly
-//     for batch_size in [1, 2, 4, 8, 16, 32, 64].iter() {
-//         let mut batch = batch::Verifier::new();
-//         for _ in 0..*batch_size {
-//             let sk = SigningKey::new(thread_rng());
-//             let pk_bytes = VerificationKeyBytes::from(&sk);
-//             let msg = b"BatchVerifyTest_HEEA_Size";
-//             let sig = sk.sign(&msg[..]);
-//             batch.queue((pk_bytes, sig, msg));
-//         }
-//         assert!(
-//             batch.verify_heea(thread_rng()).is_ok(),
-//             "Batch verification with hEEA failed for batch size {}",
-//             batch_size
-//         );
-//     }
-// }
+#[test]
+fn batch_verify_heea_different_batch_sizes() {
+    // Test various batch sizes to ensure the algorithm works correctly
+    for batch_size in [1, 2, 4, 8, 16, 32, 64].iter() {
+        let mut batch = batch::Verifier::new();
+        for _ in 0..*batch_size {
+            let sk = SigningKey::new(thread_rng());
+            let pk_bytes = VerificationKeyBytes::from(&sk);
+            let msg = b"BatchVerifyTest_HEEA_Size";
+            let sig = sk.sign(&msg[..]);
+            batch.queue((pk_bytes, sig, msg));
+        }
+        assert!(
+            batch.verify_heea(thread_rng()).is_ok(),
+            "Batch verification with hEEA failed for batch size {}",
+            batch_size
+        );
+    }
+}
