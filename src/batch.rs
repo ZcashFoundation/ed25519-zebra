@@ -163,14 +163,20 @@ impl Verifier {
         let mut sum_tau_s = Scalar::ZERO;
         let mut R_coeffs = Vec::with_capacity(self.batch_size);
         let mut Rs = Vec::with_capacity(self.batch_size);
-        let mut A_coeffs = Vec::with_capacity(self.batch_size);
-        let mut As = Vec::with_capacity(self.batch_size);
+
+        // For A coefficients, we coalesce by (pubkey, sign) to reduce MSM size
+        // Map from (vk_bytes, sign) to accumulated ρ coefficient
+        use hashbrown::HashMap;
+        let mut A_coeff_map: HashMap<(VerificationKeyBytes, bool), Scalar> = HashMap::new();
+        let mut max_duplicity = 0usize;
 
         // Step 2-3: For each signature, compute half-size scalars and accumulate
         for (vk_bytes, sigs) in self.signatures.iter() {
-            let A = CompressedEdwardsY(vk_bytes.0)
-                .decompress()
-                .ok_or(Error::InvalidSignature)?;
+            // Track duplicity for this public key
+            let duplicity = sigs.len();
+            if duplicity > max_duplicity {
+                max_duplicity = duplicity;
+            }
 
             for (k, sig) in sigs.iter() {
                 // v_i = h_i * U' mod ℓ
@@ -195,18 +201,46 @@ impl Verifier {
                 R_coeffs.push(tau_i);
                 Rs.push(R);
 
-                // Store ρ_i and A_i for Σ(ρ_i * A_i)
-                // Handle the flip_h case: if flip_h, we computed ρ_i ≡ -τ_i * v_i
-                let A_adjusted = if flip_h { -A } else { A };
-                A_coeffs.push(rho_i);
-                As.push(A_adjusted);
+                // Coalesce ρ_i by (pubkey, sign)
+                // A and -A are treated as different bases
+                let key = (*vk_bytes, flip_h);
+                *A_coeff_map.entry(key).or_insert(Scalar::ZERO) += rho_i;
             }
         }
 
+        // Convert the coalesced map into vectors for MSM
+        let mut A_coeffs = Vec::with_capacity(A_coeff_map.len());
+        let mut As = Vec::with_capacity(A_coeff_map.len());
+
+        for ((vk_bytes, flip_h), rho_sum) in A_coeff_map.iter() {
+            let A = CompressedEdwardsY(vk_bytes.0)
+                .decompress()
+                .ok_or(Error::InvalidSignature)?;
+            let A_base = if *flip_h { -A } else { A };
+            A_coeffs.push(*rho_sum);
+            As.push(A_base);
+        }
+
         // Step 4: Compute R_sum = Σ(τ_i * R_i) and A_sum = Σ(ρ_i * A_i)
+        // For A_sum, the coalesced scalars can be up to 128 + log2(max_duplicity) bits
         use curve25519_dalek::traits::VartimeMultiscalarMul;
-        let R_sum = EdwardsPoint::vartime_multiscalar_mul(R_coeffs.iter(), Rs.iter(), Some(129));
-        let A_sum = EdwardsPoint::vartime_multiscalar_mul(A_coeffs.iter(), As.iter(), Some(129));
+        let R_sum = EdwardsPoint::vartime_multiscalar_mul(R_coeffs.iter(), Rs.iter(), Some(128));
+
+        // Calculate scalar_bits for A_sum based on max_duplicity
+        // Each ρ_i is ~128 bits, and we sum up to max_duplicity of them
+        // So the result can be up to 128 + log2(max_duplicity) bits
+        let extra_bits = if max_duplicity > 1 {
+            (max_duplicity as f64).log2().ceil() as u32
+        } else {
+            0
+        };
+        let a_scalar_bits = 128 + extra_bits;
+
+        let A_sum = EdwardsPoint::vartime_multiscalar_mul(
+            A_coeffs.iter(),
+            As.iter(),
+            Some(a_scalar_bits as usize),
+        );
 
         // Step 5: Call hEEA_approx_q with U to get final ρ and τ
         // such that ρ ≡ τ * U mod ℓ
