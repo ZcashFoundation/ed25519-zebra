@@ -192,7 +192,7 @@ mod tests {
             for byte in &mut random_bytes {
                 *byte = (rng.next_u32() & 0xff) as u8;
             }
-            let h = Scalar::from_hash(Sha512::new().chain(&random_bytes));
+            let h = Scalar::from_hash(Sha512::new().chain(random_bytes));
 
             // Convert h to I256 to see the actual output
             let h_i256 = scalar_to_i256(&h);
@@ -204,9 +204,9 @@ mod tests {
             // For tau (i128), compute bit length
             let tau_magnitude_bits = if tau_i128 < 0 {
                 let abs_val = tau_i128.wrapping_neg();
-                128 - (abs_val.leading_zeros() as u32)
+                128 - abs_val.leading_zeros()
             } else {
-                128 - (tau_i128.leading_zeros() as u32)
+                128 - tau_i128.leading_zeros()
             };
 
             // Now convert to Scalars and verify the equation

@@ -148,7 +148,7 @@ fn bench_generate_half_size_scalars(c: &mut Criterion) {
         .map(|_| {
             let mut random_bytes = [0u8; 64];
             rng.fill_bytes(&mut random_bytes);
-            Scalar::from_hash(Sha512::new().chain_update(&random_bytes))
+            Scalar::from_hash(Sha512::new().chain_update(random_bytes))
         })
         .collect();
 

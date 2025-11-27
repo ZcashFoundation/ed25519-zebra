@@ -192,7 +192,11 @@ impl Verifier {
 
         // Step 4: Compute R_sum and A_sum
         use curve25519_dalek::traits::VartimeMultiscalarMul;
-        let R_sum = EdwardsPoint::vartime_multiscalar_mul(R_coeffs.iter(), Rs.iter(), Some(128));
+        let R_sum = EdwardsPoint::vartime_multiscalar_mul_with_scalar_bits(
+            R_coeffs.iter(),
+            Rs.iter(),
+            Some(128),
+        );
 
         // Build A coefficient vectors and decompress public keys
         let mut A_coeffs = Vec::with_capacity(A_map.len());
@@ -208,8 +212,11 @@ impl Verifier {
 
         // Each ρ is ~128 bits. With coalescing, we sum up to batch_size of them.
         let scalar_bits = 128 + (self.batch_size.max(1) as f64).log2().ceil() as usize;
-        let A_sum =
-            EdwardsPoint::vartime_multiscalar_mul(A_coeffs.iter(), As.iter(), Some(scalar_bits));
+        let A_sum = EdwardsPoint::vartime_multiscalar_mul_with_scalar_bits(
+            A_coeffs.iter(),
+            As.iter(),
+            Some(scalar_bits),
+        );
 
         // Step 5: Call hEEA_approx_q with U to get final ρ and τ
         // such that ρ ≡ τ * U mod ℓ
@@ -310,7 +317,6 @@ impl Verifier {
         let check = EdwardsPoint::vartime_multiscalar_mul(
             once(&B_coeff).chain(A_coeffs.iter()).chain(R_coeffs.iter()),
             once(&B).chain(As.iter()).chain(Rs.iter()),
-            None,
         );
 
         if check.mul_by_cofactor().is_identity() {
