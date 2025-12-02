@@ -27,7 +27,7 @@ features = ["nightly"]
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#stable)
 # (see https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek#public-api-semver-exemptions)
 # so only allow patch changes inside known compatible range
-curve25519-dalek = { version = ">= 4.0, < 4.2", default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }
+curve25519-dalek = { version = "5.0.0-pre.2",  default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }
 der = { version = "0.7.9", optional = true }
 ed25519 = { version = "2.2.3", default-features = false }
 ethnum = "1.5"
@@ -35,7 +35,7 @@ hashbrown = { version = "0.16", optional = true }
 pkcs8 = { version = "0.10.1", optional = true, features = ["pem"] }
 rand_core = "0.6"
 serde = { version = "1", default-features = false, optional = true, features = ["derive"] }
-sha2 = { version = "0.10", default-features = false }
+sha2 = { version = "0.11.0-rc.3", default-features = false }
 subtle = { version = "2.6.1", default-features = false }
 zeroize = { version = "1.8", default-features = false, features = ["derive"] }
 
@@ -81,4 +81,6 @@ harness = false
 
 
 [patch.crates-io]
-curve25519-dalek = { git = "https://github.com/zz-sol/curve25519-dalek.git", branch = "zz/impl_ches25", default-features = false, features = ["digest", "zeroize", "precomputed-tables"] }
+# Use modified curve25519-dalek with HEEA implementation
+# TODO: Remove this patch when the PR is merged and published
+curve25519-dalek = { git = "https://github.com/zz-sol/curve25519-dalek.git", branch = "zz/impl_ches25" }

@@ -52,14 +52,13 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use curve25519_dalek::{
-    digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::{IsIdentity, VartimeMultiscalarMul},
 };
 use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
-use sha2::Sha512;
+use sha2::{digest::Update, Sha512};
 
 use crate::{Error, VerificationKey, VerificationKeyBytes};
 use ed25519::Signature;
@@ -138,118 +137,6 @@ impl Verifier {
             .or_insert_with(|| Vec::with_capacity(1))
             .push((k, sig));
         self.batch_size += 1;
-    }
-
-    /// Perform batch verification using the new hEEA-based randomization method
-    /// from "Accelerating EdDSA Signature Verification with Faster Scalar Size Halving" (TCHES 2025).
-    ///
-    /// This method uses half-size scalars for improved performance with larger batch sizes.
-    ///
-    /// Note: According to the paper (Section 4.2), for a single signer (same public key for all
-    /// signatures), the computational cost without optimization is the same as the classical method.
-    /// The optimization would be to skip hEEA calls and use equation (1) directly. For now, we use
-    /// the general approach which works correctly for both cases.
-    #[allow(non_snake_case)]
-    pub fn verify_heea<R: RngCore + CryptoRng>(self, mut rng: R) -> Result<(), Error> {
-        // Step 1: Pick random U < ℓ and compute U' such that UU' ≡ 1 mod ℓ
-        let mut U_bytes = [0u8; 32];
-        rng.fill_bytes(&mut U_bytes);
-        let U = Scalar::from_bytes_mod_order(U_bytes);
-
-        // Compute U_inv = U^-1 mod ℓ
-        let U_inv = U.invert();
-
-        // Prepare accumulators
-        let mut sum_tau_s = Scalar::ZERO;
-        let mut R_coeffs = Vec::with_capacity(self.batch_size);
-        let mut Rs = Vec::with_capacity(self.batch_size);
-
-        // In the case where multiple signatures share the same public key,
-        // coalesce A coefficients by (pubkey, sign) to reduce MSM size
-        use hashbrown::HashMap;
-        let mut A_map: HashMap<(VerificationKeyBytes, bool), Scalar> = HashMap::new();
-
-        // Step 2-3: For each signature, compute half-size scalars and accumulate
-        for (vk_bytes, sigs) in self.signatures.iter() {
-            for (k, sig) in sigs.iter() {
-                let (rho_i, tau_i, flip_h) = crate::heea::generate_half_size_scalars(&(k * U_inv));
-
-                // Extract and validate s and R
-                let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*sig.s_bytes()))
-                    .ok_or(Error::InvalidSignature)?;
-                let R = CompressedEdwardsY(*sig.r_bytes())
-                    .decompress()
-                    .ok_or(Error::InvalidSignature)?;
-
-                sum_tau_s += tau_i * s;
-                R_coeffs.push(tau_i);
-                Rs.push(R);
-
-                // Coalesce ρ_i by (pubkey, sign) - treating A and -A as distinct bases
-                *A_map.entry((*vk_bytes, flip_h)).or_insert(Scalar::ZERO) += rho_i;
-            }
-        }
-
-        // Step 4: Compute R_sum and A_sum
-        use curve25519_dalek::traits::VartimeMultiscalarMul;
-        let R_sum = EdwardsPoint::vartime_multiscalar_mul_with_scalar_bits(
-            R_coeffs.iter(),
-            Rs.iter(),
-            Some(128),
-        );
-
-        // Build A coefficient vectors and decompress public keys
-        let mut A_coeffs = Vec::with_capacity(A_map.len());
-        let mut As = Vec::with_capacity(A_map.len());
-
-        for ((vk_bytes, flip_h), rho_sum) in A_map.iter() {
-            let A = CompressedEdwardsY(vk_bytes.0)
-                .decompress()
-                .ok_or(Error::InvalidSignature)?;
-            A_coeffs.push(*rho_sum);
-            As.push(if *flip_h { -A } else { A });
-        }
-
-        // Each ρ is ~128 bits. With coalescing, we sum up to batch_size of them.
-        let scalar_bits = 128 + (self.batch_size.max(1) as f64).log2().ceil() as usize;
-        let A_sum = EdwardsPoint::vartime_multiscalar_mul_with_scalar_bits(
-            A_coeffs.iter(),
-            As.iter(),
-            Some(scalar_bits),
-        );
-
-        // Step 5: Call hEEA_approx_q with U to get final ρ and τ
-        // such that ρ ≡ τ * U mod ℓ
-        let (rho_final, tau_final, flip_final) = crate::heea::generate_half_size_scalars(&U);
-
-        // Step 6: Final verification equation
-        // From step 4: sum_tau_s * B = R_sum + U * A_sum
-        // Multiply by τ_final: τ_final * sum_tau_s * B = τ_final * R_sum + τ_final * U * A_sum
-        // Since ρ_final ≡ τ_final * U mod ℓ:
-        //   τ_final * sum_tau_s * B = τ_final * R_sum + ρ_final * A_sum
-        //
-        // Rearranging: τ_final * R_sum + ρ_final * A_sum - τ_final * sum_tau_s * B = 0
-        //
-        // We verify: [8] * (τ_final * R_sum + ρ_final * A_sum - τ_final * sum_tau_s * B) = 0
-
-        let ts_final = tau_final * sum_tau_s;
-        let A_final = if flip_final { -A_sum } else { A_sum };
-
-        // vartime_triple_scalar_mul_basepoint computes: a*A + b*B + c*BASEPOINT
-        // We want: tau_final * R_sum + rho_final * A_final - ts_final * BASEPOINT = 0
-        let result = EdwardsPoint::vartime_triple_scalar_mul_basepoint(
-            &rho_final,
-            &A_final,
-            &tau_final,
-            &R_sum,
-            &(-ts_final),
-        );
-
-        if result.mul_by_cofactor().is_identity() {
-            Ok(())
-        } else {
-            Err(Error::InvalidSignature)
-        }
     }
 
     /// Perform batch verification, returning `Ok(())` if all signatures were

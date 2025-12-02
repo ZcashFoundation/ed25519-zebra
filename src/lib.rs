@@ -10,7 +10,6 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 pub mod batch;
 mod error;
-pub mod heea;
 mod signing_key;
 mod verification_key;
 

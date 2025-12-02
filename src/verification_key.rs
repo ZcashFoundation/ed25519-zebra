@@ -2,7 +2,7 @@ use core::convert::{TryFrom, TryInto};
 use curve25519_dalek::{
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
-    traits::IsIdentity,
+    traits::{HEEADecomposition, IsIdentity},
 };
 use sha2::{digest::Update, Sha512};
 use zeroize::DefaultIsZeroes;
@@ -286,7 +286,8 @@ impl VerificationKey {
         // it is possible that we compute ρ ≡ -τh (mod ℓ)
         // this is indicated by `flip_h` flag being true,
         // in which case we will need to negate A later
-        let (rho, tau, flip_h) = crate::heea::generate_half_size_scalars(&h);
+        // let (rho, tau, flip_h) = crate::heea::generate_half_size_scalars(&h);
+        let (rho, tau, flip_h) = h.heea_decompose();
 
         // Extract s from the signature
         let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
