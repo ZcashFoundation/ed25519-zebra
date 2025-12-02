@@ -24,7 +24,7 @@ fn sigs_with_same_pubkey() -> impl Iterator<Item = (VerificationKeyBytes, Signat
 
 fn bench_batch_verify(c: &mut Criterion) {
     let mut group = c.benchmark_group("Batch Verification");
-    for n in [8usize, 16, 32, 64, 128, 256].iter() {
+    for n in [8usize, 16, 24, 32, 40, 48, 56, 64].iter() {
         group.throughput(Throughput::Elements(*n as u64));
         let sigs = sigs_with_distinct_pubkeys().take(*n).collect::<Vec<_>>();
         group.bench_with_input(
@@ -41,7 +41,7 @@ fn bench_batch_verify(c: &mut Criterion) {
         );
         #[cfg(feature = "alloc")]
         group.bench_with_input(
-            BenchmarkId::new("Distinct Pubkeys (Classic)", n),
+            BenchmarkId::new("Signatures with Distinct Pubkeys", n),
             &sigs,
             |b, sigs| {
                 b.iter(|| {
@@ -57,7 +57,7 @@ fn bench_batch_verify(c: &mut Criterion) {
         let sigs = sigs_with_same_pubkey().take(*n).collect::<Vec<_>>();
         #[cfg(feature = "alloc")]
         group.bench_with_input(
-            BenchmarkId::new("Same Pubkey (Classic)", n),
+            BenchmarkId::new("Signatures with the Same Pubkey", n),
             &sigs,
             |b, sigs| {
                 b.iter(|| {
@@ -91,18 +91,6 @@ fn bench_single_verify(c: &mut Criterion) {
         let sig = sk.sign(b"");
         b.iter(|| {
             let _ = vk.verify_heea(&sig, b"");
-        })
-    });
-
-    #[cfg(feature = "alloc")]
-    group.bench_function("batch::Verifier single", |b| {
-        let sk = SigningKey::new(thread_rng());
-        let vk_bytes = VerificationKeyBytes::from(&sk);
-        let sig = sk.sign(b"");
-        b.iter(|| {
-            let mut batch = batch::Verifier::new();
-            batch.queue((vk_bytes, sig, b""));
-            let _ = batch.verify(thread_rng());
         })
     });
 

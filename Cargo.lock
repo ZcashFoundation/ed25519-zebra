@@ -395,7 +395,6 @@ dependencies = [
  "der",
  "ed25519",
  "ed25519-zebra 1.0.1",
- "ethnum",
  "hashbrown",
  "hex",
  "once_cell",
