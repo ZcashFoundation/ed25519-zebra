@@ -52,14 +52,13 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use curve25519_dalek::{
-    digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
     traits::{IsIdentity, VartimeMultiscalarMul},
 };
 use hashbrown::HashMap;
 use rand_core::{CryptoRng, RngCore};
-use sha2::Sha512;
+use sha2::{digest::Update, Sha512};
 
 use crate::{Error, VerificationKey, VerificationKeyBytes};
 use ed25519::Signature;
