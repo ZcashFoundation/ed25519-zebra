@@ -1,11 +1,10 @@
 use core::convert::{TryFrom, TryInto};
 use curve25519_dalek::{
-    digest::Update,
     edwards::{CompressedEdwardsY, EdwardsPoint},
     scalar::Scalar,
-    traits::IsIdentity,
+    traits::{HEEADecomposition, IsIdentity},
 };
-use sha2::Sha512;
+use sha2::{digest::Update, Sha512};
 use zeroize::DefaultIsZeroes;
 
 use ed25519::{signature::Verifier, Signature};
@@ -254,6 +253,69 @@ impl VerificationKey {
                 .chain(msg),
         );
         self.verify_prehashed(signature, k)
+    }
+
+    /// Verify a signature using the heea half-size scalar optimization.
+    ///
+    /// This implements the algorithm from "Accelerating EdDSA Signature Verification
+    /// with Faster Scalar Size Halving" (TCHES 2025).
+    ///
+    /// The standard verification equation sB = R + hA is transformed to:
+    /// τsB = τR + ρA where ρ ≡ τh (mod ℓ)
+    ///
+    /// Both ρ and τ are approximately half the size of h.
+    ///
+    /// We then decompose τs into two 128-bit scalars:
+    /// τs = τs_hi * 2^128 + τs_lo
+    ///
+    /// The verification equation becomes:
+    /// τs_lo B + τs_hi (2^128 B) = τR + ρA
+    /// which can be done via 4-variable MSM with half-size scalars.
+    #[allow(non_snake_case)]
+    pub fn verify_heea(&self, signature: &Signature, msg: &[u8]) -> Result<(), Error> {
+        // Compute the hash scalar h (called k in the standard implementation)
+        let h = Scalar::from_hash(
+            Sha512::default()
+                .chain(&signature.r_bytes()[..])
+                .chain(&self.A_bytes.0[..])
+                .chain(msg),
+        );
+
+        // Generate half-size scalars ρ and τ such that ρ ≡ τh (mod ℓ)
+        // in order to have rho and tau approximately half the size of h
+        // it is possible that we compute ρ ≡ -τh (mod ℓ)
+        // this is indicated by `flip_h` flag being true,
+        // in which case we will need to negate A later
+        // let (rho, tau, flip_h) = crate::heea::generate_half_size_scalars(&h);
+        let (rho, tau, flip_h) = h.heea_decompose();
+
+        // Extract s from the signature
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(*signature.s_bytes()))
+            .ok_or(Error::InvalidSignature)?;
+
+        // Decode R from the signature
+        let neg_R = -CompressedEdwardsY(*signature.r_bytes())
+            .decompress()
+            .ok_or(Error::InvalidSignature)?;
+
+        // Standard verification checks: sB = R + hA
+        // Transformed verification: -τsB + τR + ρA == 0
+        //
+        // We verify:
+        //  [8] τs B + [8] τ (-R) + [8] ρ (-A) == 0
+
+        // Compute τs
+        let ts = tau * s;
+        let A = if flip_h { -self.minus_A } else { self.minus_A };
+        // Compute the multi-scalar multiplication
+        let result = EdwardsPoint::vartime_triple_scalar_mul_basepoint(&tau, &neg_R, &rho, &A, &ts);
+
+        // Check if [8] τs B + [8] τ (-R) + [8] ρ (-A) == 0
+        if result.mul_by_cofactor().is_identity() {
+            Ok(())
+        } else {
+            Err(Error::InvalidSignature)
+        }
     }
 
     /// Verify a signature with a prehashed `k` value. Note that this is not the

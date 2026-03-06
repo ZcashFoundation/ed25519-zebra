@@ -73,5 +73,29 @@ fn bench_batch_verify(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_batch_verify);
+fn bench_single_verify(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Single Verification");
+
+    group.bench_function("ed25519_zebra", |b| {
+        let sk = SigningKey::new(thread_rng());
+        let vk = VerificationKey::from(&sk);
+        let sig = sk.sign(b"");
+        b.iter(|| {
+            let _ = vk.verify(&sig, b"");
+        })
+    });
+
+    group.bench_function("ed25519_hEEA", |b| {
+        let sk = SigningKey::new(thread_rng());
+        let vk = VerificationKey::from(&sk);
+        let sig = sk.sign(b"");
+        b.iter(|| {
+            let _ = vk.verify_heea(&sig, b"");
+        })
+    });
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_single_verify, bench_batch_verify,);
 criterion_main!(benches);
