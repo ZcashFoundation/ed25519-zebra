@@ -1,5 +1,7 @@
 #[cfg(feature = "pem")]
 use der::pem::LineEnding;
+#[cfg(feature = "pem")]
+use ed25519::KeypairBytes;
 #[cfg(any(feature = "pem", feature = "pkcs8"))]
 use ed25519_zebra::*;
 #[cfg(feature = "pkcs8")]
@@ -68,6 +70,27 @@ fn encode_signing_key_to_pem() {
         PKCS8_V2_PEM.as_bytes()
     );
     assert_eq!(vk, PUBLIC_KEY_PEM);
+}
+
+#[test]
+#[cfg(feature = "pem")]
+fn signing_key_keypair_bytes_roundtrip() {
+    // KeypairBytes::secret_key holds the 32-byte seed (RFC 8410), so converting a
+    // SigningKey to KeypairBytes and back must yield the same key.
+    let sk_bytes_string = "D4EE72DBF913584AD5B6D8F1F769F8AD3AFE7C28CBF1D4FBE097A88F44755842";
+    let mut sk_array = [0u8; 32];
+    hex::decode_to_slice(sk_bytes_string, &mut sk_array as &mut [u8]).ok();
+
+    let sk = SigningKey::from(sk_array);
+    let keypair_bytes = KeypairBytes::from(&sk);
+
+    assert_eq!(keypair_bytes.secret_key, sk_array);
+
+    let sk_roundtrip = SigningKey::from(keypair_bytes.secret_key);
+    assert_eq!(
+        VerificationKeyBytes::from(&sk),
+        VerificationKeyBytes::from(&sk_roundtrip),
+    );
 }
 
 #[test]
