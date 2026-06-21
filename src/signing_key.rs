@@ -234,7 +234,7 @@ impl From<SigningKey> for KeypairBytes {
 impl From<&SigningKey> for KeypairBytes {
     fn from(signing_key: &SigningKey) -> KeypairBytes {
         KeypairBytes {
-            secret_key: signing_key.s.to_bytes(),
+            secret_key: signing_key.seed,
             public_key: Some(PublicKeyBytes(signing_key.vk.into())),
         }
     }
