@@ -2,6 +2,28 @@
 
 Entries are listed in reverse chronological order.
 
+# 5.0.0
+
+This release contains breaking changes, since the types of these
+dependencies are part of the public API. The MSRV is unchanged (1.85).
+
+* Bump `rand_core` from 0.6 to 0.10 (and the `rand` dev-dependency from 0.8 to
+  0.10). `SigningKey::new()` and `batch::Verifier::verify()` now require an RNG
+  implementing the `rand_core` 0.10 `CryptoRng` trait, e.g. `rand::rng()` from
+  `rand` 0.10 (which replaces `rand::thread_rng()`).
+* Bump `curve25519-dalek` from 4 to 5.
+* Bump `ed25519` from 2 to 3 (and thus `signature` from 2 to 3). The re-exported
+  `ed25519` crate no longer has a `std` feature.
+* Bump `sha2` from 0.10 to 0.11.
+* Bump `pkcs8` from 0.10 to 0.11 and `der` from 0.7 to 0.8 (`pkcs8`/`pem`
+  features). `pkcs8::Error::KeyMalformed` errors now carry a
+  `pkcs8::KeyError::Invalid`, and `SigningKey` implements
+  `TryFrom<pkcs8::PrivateKeyInfoRef>` instead of `TryFrom<pkcs8::PrivateKeyInfo>`.
+* The `serde` encoding of `Signature` changed (via `ed25519` 3): it now uses
+  `serdect`, serializing as bytes in binary formats (bincode adds a length
+  prefix) and as an uppercase hex string in human-readable formats. Signatures
+  serialized with 4.x cannot be deserialized with 5.0.
+
 # 4.2.0
 
 * Bump MSRV from 1.65 to 1.85.
