@@ -13,7 +13,7 @@ use core::convert::TryFrom;
 #[cfg(feature = "pkcs8")]
 use core::convert::TryInto;
 use curve25519_dalek::{constants, digest::Update, scalar::Scalar};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRng;
 use sha2::{Digest, Sha512};
 use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
@@ -28,11 +28,14 @@ use ed25519::PublicKeyBytes;
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use der::pem::LineEnding;
 #[cfg(feature = "pkcs8")]
-use pkcs8::der::SecretDocument;
+use pkcs8::der::{
+    asn1::{BitStringRef, OctetStringRef},
+    SecretDocument,
+};
 #[cfg(feature = "pkcs8")]
 use pkcs8::{
     spki::AlgorithmIdentifierRef, DecodePrivateKey, DecodePublicKey, Document, EncodePrivateKey,
-    EncodePublicKey, ObjectIdentifier, PrivateKeyInfo,
+    EncodePublicKey, KeyError, ObjectIdentifier, PrivateKeyInfoRef,
 };
 #[cfg(all(feature = "pem", feature = "pkcs8"))]
 use zeroize::Zeroizing;
@@ -165,11 +168,11 @@ impl PartialEq for SigningKey {
 impl Eq for SigningKey {}
 
 #[cfg(feature = "pkcs8")]
-impl<'a> TryFrom<PrivateKeyInfo<'a>> for SigningKey {
+impl<'a> TryFrom<PrivateKeyInfoRef<'a>> for SigningKey {
     type Error = Error;
-    fn try_from(pki: PrivateKeyInfo) -> Result<Self, Self::Error> {
+    fn try_from(pki: PrivateKeyInfoRef<'a>) -> Result<Self, Self::Error> {
         if pki.algorithm == ALGORITHM_ID {
-            SigningKey::try_from(pki.private_key)
+            SigningKey::try_from(pki.private_key.as_bytes())
         } else {
             Err(Self::Error::MalformedSecretKey)
         }
@@ -211,11 +214,11 @@ impl TryFrom<&KeypairBytes> for SigningKey {
         if let Some(public_bytes) = &pkcs8_key.public_key {
             let expected_verifying_key =
                 VerificationKey::from_public_key_der(public_bytes.as_ref())
-                    .map_err(|_| pkcs8::Error::KeyMalformed)?;
+                    .map_err(|_| pkcs8::Error::KeyMalformed(KeyError::Invalid))?;
 
             if VerificationKey::from(&signing_key.unwrap()).A_bytes != expected_verifying_key.into()
             {
-                return Err(pkcs8::Error::KeyMalformed);
+                return Err(pkcs8::Error::KeyMalformed(KeyError::Invalid));
             }
         }
 
@@ -251,10 +254,10 @@ impl EncodePrivateKey for SigningKey {
         let mut final_key = [0u8; 34];
         final_key[..2].copy_from_slice(&[0x04, 0x20]);
         final_key[2..].copy_from_slice(&self.seed);
-        SecretDocument::try_from(PrivateKeyInfo {
+        SecretDocument::try_from(PrivateKeyInfoRef {
             algorithm: ALGORITHM_ID,
-            private_key: &final_key,
-            public_key: Some(self.vk.A_bytes.0.as_slice()),
+            private_key: OctetStringRef::new(&final_key)?,
+            public_key: Some(BitStringRef::from_bytes(&self.vk.A_bytes.0)?),
         })
     }
 }
@@ -273,7 +276,7 @@ impl DecodePrivateKey for SigningKey {
                 if sk.vk.A_bytes.0 == vk2.to_bytes() {
                     Ok(sk)
                 } else {
-                    Err(pkcs8::Error::KeyMalformed)
+                    Err(pkcs8::Error::KeyMalformed(KeyError::Invalid))
                 }
             }
             None => Ok(sk),
@@ -317,7 +320,7 @@ impl SigningKey {
     }
 
     /// Generate a new signing key.
-    pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> SigningKey {
+    pub fn new<R: CryptoRng>(mut rng: R) -> SigningKey {
         let mut bytes = [0u8; 32];
         rng.fill_bytes(&mut bytes[..]);
         bytes.into()
@@ -367,7 +370,10 @@ impl SigningKey {
         let mut final_key = [0u8; 34];
         final_key[..2].copy_from_slice(&[0x04, 0x20]);
         final_key[2..].copy_from_slice(&self.seed);
-        SecretDocument::try_from(PrivateKeyInfo::new(ALGORITHM_ID, &final_key))
+        SecretDocument::try_from(PrivateKeyInfoRef::new(
+            ALGORITHM_ID,
+            OctetStringRef::new(&final_key)?,
+        ))
     }
 
     /// Serialize [`SigningKey`] as a PEM-encoded PKCS#8 string. Note that this
@@ -378,6 +384,6 @@ impl SigningKey {
         line_ending: LineEnding,
     ) -> Result<Zeroizing<String>, pkcs8::Error> {
         let doc = self.to_pkcs8_der_v1()?;
-        Ok(doc.to_pem(PrivateKeyInfo::PEM_LABEL, line_ending)?)
+        Ok(doc.to_pem(PrivateKeyInfoRef::PEM_LABEL, line_ending)?)
     }
 }

@@ -35,10 +35,10 @@ pub const VERIFICATION_KEY_LENGTH: usize = 32;
 /// following idiom:
 /// ```
 /// use core::convert::TryFrom;
-/// # use rand::thread_rng;
+/// # use rand::rng;
 /// # use ed25519_zebra::*;
 /// # let msg = b"Zcash";
-/// # let sk = SigningKey::new(thread_rng());
+/// # let sk = SigningKey::new(rng());
 /// # let sig = sk.sign(msg);
 /// # let vk_bytes = VerificationKeyBytes::from(&sk);
 /// VerificationKey::try_from(vk_bytes)

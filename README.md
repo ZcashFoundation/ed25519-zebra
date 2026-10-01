@@ -23,7 +23,7 @@ individual verification consistent with batch verification and are
 backwards-compatible with all existing Ed25519 signatures. Any non-Zcash users
 should use the ZIP215 rules:
 ```toml
-ed25519-zebra = "4"
+ed25519-zebra = "5"
 ```
 
 ## ZIP 215 and changes to Zcash-flavored Ed25519
@@ -41,14 +41,14 @@ validation criteria.  Users (like Zebra or zcashd) who need to handle the
 upgrade can use both versions simultaneously using cargo renaming, e.g.,
 ```toml
 ed25519-zebra-legacy = { package = "ed25519-zebra", version = "1" }
-ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "4" }
+ed25519-zebra-zip215 = { package = "ed25519-zebra", version = "5" }
 ```
 
 ## Example
 
 ```
 use std::convert::TryFrom;
-use rand::thread_rng;
+use rand::rng;
 use ed25519_zebra::*;
 
 let msg = b"Zcash";
@@ -56,7 +56,7 @@ let msg = b"Zcash";
 // Signer's context
 let (vk_bytes, sig_bytes) = {
     // Generate a signing key and sign the message
-    let sk = SigningKey::new(thread_rng());
+    let sk = SigningKey::new(rng());
     let sig = sk.sign(msg);
 
     // Types can be converted to raw byte arrays with From/Into

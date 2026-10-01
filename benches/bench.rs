@@ -2,11 +2,11 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Through
 
 use core::convert::TryFrom;
 use ed25519_zebra::*;
-use rand::thread_rng;
+use rand::rng;
 
 fn sigs_with_distinct_pubkeys() -> impl Iterator<Item = (VerificationKeyBytes, Signature)> {
     std::iter::repeat_with(|| {
-        let sk = SigningKey::new(thread_rng());
+        let sk = SigningKey::new(rng());
         let pk_bytes = VerificationKeyBytes::from(&sk);
         let sig = sk.sign(b"");
         (pk_bytes, sig)
@@ -14,7 +14,7 @@ fn sigs_with_distinct_pubkeys() -> impl Iterator<Item = (VerificationKeyBytes, S
 }
 
 fn sigs_with_same_pubkey() -> impl Iterator<Item = (VerificationKeyBytes, Signature)> {
-    let sk = SigningKey::new(thread_rng());
+    let sk = SigningKey::new(rng());
     let pk_bytes = VerificationKeyBytes::from(&sk);
     std::iter::repeat_with(move || {
         let sig = sk.sign(b"");
@@ -49,7 +49,7 @@ fn bench_batch_verify(c: &mut Criterion) {
                     for (vk_bytes, sig) in sigs.iter().cloned() {
                         batch.queue((vk_bytes, sig, b""));
                     }
-                    batch.verify(thread_rng())
+                    batch.verify(rng())
                 })
             },
         );
@@ -65,7 +65,7 @@ fn bench_batch_verify(c: &mut Criterion) {
                     for (vk_bytes, sig) in sigs.iter().cloned() {
                         batch.queue((vk_bytes, sig, b""));
                     }
-                    batch.verify(thread_rng())
+                    batch.verify(rng())
                 })
             },
         );

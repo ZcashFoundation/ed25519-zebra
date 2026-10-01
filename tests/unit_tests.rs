@@ -2,13 +2,13 @@
 
 use core::convert::TryFrom;
 
-use rand::thread_rng;
+use rand::rng;
 
 use ed25519_zebra::{Signature, SigningKey, VerificationKey, VerificationKeyBytes};
 
 #[test]
 fn parsing() {
-    let sk = SigningKey::new(thread_rng());
+    let sk = SigningKey::new(rng());
     let pk = VerificationKey::from(&sk);
     let pkb = VerificationKeyBytes::from(&sk);
     let sig = sk.sign(b"test");
@@ -39,7 +39,7 @@ fn parsing() {
 
 #[test]
 fn sign_and_verify() {
-    let sk = SigningKey::new(thread_rng());
+    let sk = SigningKey::new(rng());
     let pk = VerificationKey::from(&sk);
 
     let msg = b"ed25519-zebra test message";
