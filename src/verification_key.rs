@@ -92,7 +92,11 @@ impl<'a> TryFrom<SubjectPublicKeyInfoRef<'a>> for VerificationKeyBytes {
     type Error = Error;
 
     fn try_from(spki: SubjectPublicKeyInfoRef) -> Result<VerificationKeyBytes, Error> {
-        Ok(VerificationKeyBytes::try_from(spki.subject_public_key.as_bytes().unwrap()).unwrap())
+        let pk_bytes = spki
+            .subject_public_key
+            .as_bytes()
+            .ok_or(Error::MalformedPublicKey)?;
+        VerificationKeyBytes::try_from(pk_bytes)
     }
 }
 
@@ -206,9 +210,12 @@ impl EncodePublicKey for VerificationKey {
 impl DecodePublicKey for VerificationKey {
     /// Deserialize [`VerificationKey`] from ASN.1 DER bytes (32 bytes).
     fn from_public_key_der(bytes: &[u8]) -> Result<Self, pkcs8::spki::Error> {
-        let spki = SubjectPublicKeyInfoRef::try_from(bytes).unwrap();
-        let pk_bytes = spki.subject_public_key.as_bytes().unwrap();
-        Ok(Self::try_from(pk_bytes).unwrap())
+        let spki = SubjectPublicKeyInfoRef::try_from(bytes)?;
+        let pk_bytes = spki
+            .subject_public_key
+            .as_bytes()
+            .ok_or(pkcs8::spki::Error::KeyMalformed)?;
+        Self::try_from(pk_bytes).map_err(|_| pkcs8::spki::Error::KeyMalformed)
     }
 }
 

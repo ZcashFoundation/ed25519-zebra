@@ -2,6 +2,14 @@
 
 Entries are listed in reverse chronological order.
 
+# Unreleased
+
+* Fix the `pkcs8`/`pem` conversion paths: `SigningKey` now decodes the nested
+  RFC 8410 private-key octet string, converting a `SigningKey` to
+  `KeypairBytes` stores the seed rather than the clamped scalar, the public
+  key attached to a `KeypairBytes` is compared as raw bytes, and malformed
+  DER input returns errors instead of panicking.
+
 # 5.0.0
 
 This release contains breaking changes, since the types of these
