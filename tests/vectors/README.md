@@ -1,0 +1,1 @@
+`ed25519_test.json` is from C2SP/wycheproof, `testvectors_v1/ed25519_test.json`, at commit `65ca494727a52944c204441c860b039e6786b99b`. The vector file is licensed under Apache-2.0; see the repository's `LICENSE-APACHE`.
